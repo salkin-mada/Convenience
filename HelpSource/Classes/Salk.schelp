@@ -1,0 +1,62 @@
+CLASS:: Salk
+
+SUMMARY:: Nonsense
+
+CATEGORIES:: Template
+
+RELATED:: Classes/non
+
+
+
+DESCRIPTION::
+
+Language side "something"
+
+
+
+
+
+CLASSMETHODS::
+
+
+
+METHOD:: new
+
+
+
+
+
+ARGUMENT:: server
+
+If code::nil:: then the default server will be used.
+
+
+
+
+
+INSTANCEMETHODS::
+
+
+
+PRIVATE:: initSalk, prSynthName
+
+
+
+
+
+METHOD:: mute
+
+silence (boolean)
+
+
+
+
+EXAMPLES::
+
+
+
+CODE::
+
+// example
+
+::
