@@ -83,6 +83,24 @@ fork{
 };
 )
 
+(
+fork{
+    1.do{|i|
+            16.do{|i|
+                    t.buf_([~b1, ~b2, ~b3].wrapAt(i));
+                    t.rate_(1.0.rand2);
+                    1.0.wait;
+            };
+        5.wait;
+        5.do{|i|
+                    t.buf_([~b1, ~b2, ~b3].wrapAt(i));
+                    t.rate_(0.3.rand2);
+                    0.2.wait;
+            }
+        }
+};
+)
+
 //now for something completely different
 (
 t.rate_(1.7);
@@ -110,6 +128,16 @@ t.dur_({0.05.rrand(0.35)});
 t.pan_({1.0.rand2});
 t.amp_({0.5.rrand(1.0)});
 t.delta_({0.01.rrand(0.8)});
+)
+
+(
+t.buf_({[~b1, ~b2, ~b3].choose});
+t.rate_({2.rand2});
+t.pos_({0.9.rand});
+t.dur_({0.5.rrand(0.95)});
+t.pan_({1.0.rand2});
+t.amp_({0.5.rrand(1.0)});
+t.delta_({0.1.rrand(0.4)});
 )
 
 //quantise playbackrate
