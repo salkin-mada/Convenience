@@ -91,6 +91,13 @@ t.dur_({0.01.rrand(0.1)});
 t.delta_({0.2.rrand(3.3)});    //delta can be a function
 )
 
+(
+t.rate_(1.2);
+t.pos_({0.1.rrand(0.3)});
+t.dur_({0.3.rrand(0.8)});
+t.delta_({0.7.rrand(2.3)});    //delta can be a function
+)
+
 t.pause
 t.start
 

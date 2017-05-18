@@ -1,4 +1,4 @@
-Salk { // the plan is to make a combination of RedGrain & PlayBufCf ++
+Salk { // the idea is to make a combination of RedGrain & PlayBufCf ++
 
 	*ar { arg numChannels, bufnum=0, rate=1.0, trigger=1.0, startPos=0.0, loop = 0.0,
 			lag = 0.1, n = 2;
@@ -213,4 +213,3 @@ SalkFR : Salk {
 	prSynthName {^"SalkFR"}
 
 }
-
