@@ -1,0 +1,6 @@
+## Ignore
+# ds
+.DS_STORE
+# Code
+*.vscode
+

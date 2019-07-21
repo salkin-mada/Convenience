@@ -1,6 +1,6 @@
 CLASS:: Salk
 
-SUMMARY:: Nonsense ..
+SUMMARY:: Convenience
 
 CATEGORIES:: Template
 
@@ -57,6 +57,13 @@ EXAMPLES::
 
 CODE::
 
-// example
+Salk.loadFolders("Z:/aFolder/withFoldersWithFiles");
+Salk.folders
+Salk.get(\tg500_fx, 2).path
 
+//minimum
+Salk.p(\lay); // play first file in first folder
+Salk.s(\lay) // stop
+
+// for more see the usage folder
 ::
