@@ -59,7 +59,7 @@ Salk {
 			);
 		).play(TempoClock(tempo/60*4));
 
-		//return = 123.rand;
+		//return = name;
 		//^return;
 	}
 
@@ -198,6 +198,7 @@ Salk {
 			sig = LPF.ar(sig, cutoff);
 			sig = sig + (LPF.ar(sig, 100, bass));
 			sig = Splay.ar(sig, spread: spread, center: pan, level: amp);
+			sig = LeakDC.ar(sig);
 			Out.ar(out, (sig*env));
 		}).add;
 
@@ -222,6 +223,7 @@ Salk {
 			sig = LPF.ar(sig, cutoff);
 			sig = sig + (LPF.ar(sig, 100, bass));
 			sig = Splay.ar(sig, spread: spread, center: pan, level: amp);
+			sig = LeakDC.ar(sig);
 			Out.ar(out, (sig*env));
 		}).add;
 
@@ -250,6 +252,7 @@ Salk {
 			sig = LPF.ar(sig, cutoff);
 			sig = sig + (LPF.ar(sig, 100, bass));
 			sig = Splay.ar(sig, spread: spread, center: pan, level: amp);
+			sig = LeakDC.ar(sig);
 			Out.ar(out, (sig*env));
 		}).add;
 
@@ -275,6 +278,7 @@ Salk {
 			sig = LPF.ar(sig, cutoff);
 			sig = sig + (LPF.ar(sig, 100, bass));
 			sig = Splay.ar(sig, spread: spread, center: pan, level: amp);
+			sig = LeakDC.ar(sig);
 			Out.ar(out, (sig*env));
 		}).add;
 
@@ -295,6 +299,7 @@ Salk {
 			}, frombin: 0, tobin: (~frame / 2) - 1, zeroothers: 0);
 			sig = IFFT(chain, win) * amp * env;
 			sig = Splay.ar(sig, spread: spread, center: pan, level: amp);
+			sig = LeakDC.ar(sig);
 			Out.ar(out, sig);
 		}).add;
 
@@ -312,6 +317,7 @@ Salk {
 			}, frombin: 0, tobin: (~frame / 2) - 1, zeroothers: 0);
 			sig = IFFT(chain, win) * amp * env;
 			sig = Splay.ar(sig, spread: spread, center: pan, level: amp);
+			sig = LeakDC.ar(sig);
 			Out.ar(out, sig);
 		}).add;
 
