@@ -1,6 +1,6 @@
-CLASS:: Salk
+CLASS:: Convenience
 
-SUMMARY:: Convenience
+SUMMARY:: Ease
 
 CATEGORIES:: Template
 
@@ -38,7 +38,7 @@ INSTANCEMETHODS::
 
 
 
-PRIVATE:: initSalk, prSynthName
+PRIVATE:: Cnitconvenience, prSynthName
 
 
 
@@ -57,13 +57,13 @@ EXAMPLES::
 
 CODE::
 
-Salk.loadFolders("Z:/aFolder/withFoldersWithFiles");
-Salk.folders
-Salk.get(\tg500_fx, 2).path
+Convenience.loadFolders("Z:/aFolder/withFoldersWithFiles");
+Convenience.folders
+Convenience.get(\tg500_fx, 2).path
 
 //minimum
-Salk.p(\lay); // play first file in first folder
-Salk.s(\lay) // stop
+Convenience.p(\lay); // play first file in first folder
+Convenience.s(\lay) // stop
 
 // for more see the usage folder
 ::

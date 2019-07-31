@@ -1,27 +1,35 @@
-Salk {
-	classvar <dir, <buffers;
-	classvar makeBuffersFn;
+// implement protector condition
+// ihværksæt beskyttelses tilstand
+// ++ config setup for hvornår tilstanden skal slå ind / ændres
+Convenience {
+	classvar <dir, <buffers, <folderPaths;
+	classvar /*makeBuffersFn, */loadFn;
+	classvar loadSynths = true;
+	classvar synthsBuild = false;
 
-	const <supportedExtensions = #[\wav, \WAV, \wave, \aif, \aiff, \flac];
+	const <supportedExtensions = #[\wav, \wave, \aif, \aiff, \flac];
 
 	*initClass {
 		buffers = Dictionary.new;
-		makeBuffersFn = #{ |server| Salk.prMakeBuffers(server) };
+		folderPaths = Dictionary.new;
+		loadFn = #{ | server | Convenience.prPipeFoldersToLoadFunc(server) };
 		this.prAddEventType;
+		"init".postln;
 	}
 
-	*p { | name, type=\Salk, out = 0, folder, index = 1, dur = 8, stretch = 1.0,
-		pos = 0, loop = 0, rate = 1, degree = 0, octave = 3, root = 0, scale, cutoff = 22e3, bass = 0,
-		pan = 0, spread = 0, amp = 0.5, attack = 0.1, decay = 0.5,
-		sustain=1.0, release = 0.5, tempo = 120, tuningOnOff = 0, basefreq = 440, fftOnOff = 0, binRange = 20 |
+	*p { | name, type=\Convenience, out = 0, folder, index = 1, dur = 8, stretch = 1.0,
+		pos = 0, loop = 0, rate = 1, degree = 0, octave = 3, root = 0, scale,
+		cutoff = 22e3, bass = 0, pan = 0, spread = 0, amp = 0.5, attack = 0.1,
+		decay = 0.5, sustain=1.0, release = 0.5, tempo = 2.0, tuningOnOff = 0,
+		basefreq = 440, fftOnOff = 0, binRange = 20 |
 
 		//var return;
 
 		if(name.isNil,{"needs a key aka name, please".throw; ^nil});
 
 		if(folder.isNil, {
-			if(Salk.folders.asArray[0].isNil.not, {
-				folder = Salk.folders.asArray[0]
+			if(Convenience.folders.asArray[0].isNil.not, {
+				folder = Convenience.folders.asArray[0]
 			}, {"not init corr no folder avai".throw; ^nil})
 		});
 		if(scale.isNil, {
@@ -57,7 +65,7 @@ Salk {
 				\release, release,
 				\binRange, binRange
 			);
-		).play(TempoClock(tempo/60*4));
+		).play(TempoClock(tempo));
 
 		//return = name;
 		//^return;
@@ -67,37 +75,327 @@ Salk {
 		Pdef(name).stop
 	}
 
-	*loadFolders { |path, server|
-		dir = path;
-		if (dir.isNil) { Error("this is not a directory").throw };
+	*crawl { | initpath, depth = 0, server |
+
+		// if server is nil set to default
+		server = server ? Server.default;
+
+		// if no path is specified open crawl drag'n drop window
+		if (initpath.isNil, {
+			var cond = Condition(false);
+			var win, sink, sinkColor, depthSetter;
+
+			win = Window.new("ZzZzzzZZ.crawl"/*, resizable: false*/).front;
+			win.setInnerExtent(260,290);
+
+			StaticText(win, Rect(20, 10, 220, 25)).align_(\center)
+			.stringColor_(Color.green)
+			.background_(Color.black)
+			.string_(" choose init path for crawler ");
+
+			// receive path
+			sink = DragSink(win, Rect(10, 40, 240, 240)).align_(\center);
+			sinkColor = Color.white;
+			sink.string = "drop folder here and init crawl";
+			sink.stringColor_(Color.blue(1.0));
+			sink.background_(sinkColor);
+
+
+			StaticText(win,Rect(70, 50, 130, 30)).string_("set depth ->");
+			depthSetter = TextField(win, Rect(165, 50, 40, 30)).align_(\center);
+			depthSetter.string_(depth);
+			depthSetter.background_(Color.blue(alpha:0));
+			depthSetter.action_{ | str |
+				var integerGuard = true;
+				str.value.do{ | char | if (char.digit > 9,{integerGuard = false})};
+				if (integerGuard, {
+					depth = str.value.asInteger;
+					{ // Routine GREEN
+						2.do{
+							var col = 0;
+							256.do{
+								depthSetter.background_(Color.new255(0,col,0,col.linlin(0,255,255,0)));
+								sink.background_(Color.new255(0,col.linlin(0,255,255,100),0,col));
+								col = col + 1;
+								0.001.wait;
+							};
+						};
+						// back to normal
+						sink.background_(sinkColor);
+					}.fork(AppClock)
+				}, {
+					"please set depth with an integer".postln;
+					{ // Routine RED
+						2.do{
+							var col = 0;
+							256.do{
+								depthSetter.background_(Color.new255(col,0,0,col.linlin(0,255,255,0)));
+								sink.background_(Color.new255(col.linlin(0,255,255,0),0,0,col));
+								col = col + 1;
+								0.001.wait;
+							};
+						};
+						// back to normal
+						sink.background_(sinkColor);
+					}.fork(AppClock)
+				});
+				//"loading depth is: %".format(integer.value).postln;
+			};
+
+			sink.receiveDragHandler = {
+				sink.object = View.currentDrag.value;
+				initpath = sink.object.value;
+				//"initpath set from crawl gui: %".format(initpath).postln;
+
+				// gui feedback for humans begin
+				sink.string = "good choice!";
+				sink.background_(Color.green);
+
+				{ // Routine for Condition trigger and feedback
+					0.4.wait;
+
+					// do real work behind sillyness
+					cond.test = true;
+					cond.signal;
+
+					sink.background_(Color.yellow);
+					sink.stringColor_(Color.black);
+					sink.string = "crawling around";
+					5.do{
+						5.do{
+							0.02.wait;
+							sink.string = sink.string+".";
+						};
+						sink.string = "crawling around";
+						0.05.wait;
+					};
+					sink.stringColor_(Color.green);
+					sink.string = "done crawling";
+					0.4.wait;
+
+
+					win.close;
+				}.fork(AppClock);
+				// gui feeback for humans end
+
+				{ // Routine for the wait Condition
+					cond.wait; // wait for dialog
+					"\ncrawl:::going to parser".postln;
+					// go to parser
+					this.prParseFolders(initpath, depth, server);
+					"\ncrawl:::done parsing".postln;
+				}.fork(AppClock)
+
+			}//.fork(AppClock); // routine for hang yield stuff
+
+		}, {
+			// NO WINDOW USAGE
+			// initpath was set when crawl method was called
+			// going directly to parsing!
+			"going directly, no gui".postln;
+			this.prParseFolders(initpath, depth, server)
+		});
+
+		// load synths on/off
+		if (loadSynths, {
+			// add synths if not already done
+			if (synthsBuild.not,{
+				this.prAddSynthDefinitions;
+			});
+		});
+
+	}
+
+	*prParseFolders{ | initpath, depth = 0, server |
+		var initPathDepthCount = 0;
+
+		/*"\n__prParseFolders__".post;
+		"\n\tinitpath: %".format(initpath).post;
+		"\n\tdepth: %\n".format(depth).postln;*/
 
 		server = server ? Server.default;
 
-		// create buffers on boot
-		ServerBoot.add(makeBuffersFn, server);
+		dir = initpath;
+
+		// count init depth
+		PathName(initpath).pathOnly.do{ | char |
+			// here we should have a guard func that removes the last slash in initpath
+			// if it was given aka ~/Desktop/soundFiles/
+			// instead of ~/Desktop/soundFiles ie. ending with a slash
+			// breaks the depth control math/iteration
+			if (char == $/, {initPathDepthCount = initPathDepthCount + 1;})
+		};
+		//"initPathDepthCount: %".format(initPathDepthCount).postln;
+
+		// take init depth into account aka how many slashed in initpath
+		depth = depth + initPathDepthCount;
+		//"after init path depth addition/offset, depth is: %".format(depth).postln;
+
+		PathName(initpath).filesDo{ | item |
+			var loadFolderFlag;
+			var depthCounter = 0;
+
+			// folder depth control
+			item.pathOnly.do{ | char |
+				//char.postln;
+				if (char == $/, {
+					//"char was /".postln;
+					if (depthCounter <= depth, {
+						loadFolderFlag = true;
+						//"true".postln;
+						depthCounter = depthCounter+1;
+					}, { loadFolderFlag = false; /*"false".postln;*/});
+					//depthCounter.postln;
+				})
+			};
+
+			//"parser checking: %".format(item.pathOnly).postln;
+
+			//"after depth control loadFolderFlag is %".format(loadFolderFlag).postln;
+
+			if (loadFolderFlag == true, {
+				"_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/".scramble.postln;
+				// add to folderPaths if not already present
+				if (folderPaths.includesKey(item.folderName.replace(($ ),"_").replace(($-),"_").replace(($,),"").asSymbol).not, {
+					folderPaths.add(item.folderName.replace(($ ),"_").replace(($-),"_").replace(($,),"").asSymbol -> item.pathOnly.asSymbol);
+					//"added % to folderPaths".format(item.pathOnly.asSymbol).postln;
+				}, {
+					// folder already added to folderPaths
+					/*"folder % included in folderPaths will not be added again".format(
+					item.pathOnly.asSymbol
+					).postln;*/
+				});
+			});
+			//"parser_iteration".postln;
+		};
+
+		/*folderPaths.keysDo{ | item |
+		"\n\t__prParseFolders__folderPath: %\n".format(item).postln
+		};*/
+
+		//if (folderPaths.isEmpty, {Error("\n\n\n\tfolderPaths is EMPTY!\n\n\n\n").throw});
+
+		ServerBoot.add(loadFn, server);
 
 		// if server is running create rightaway
 		if (server.serverRunning) {
-			this.prMakeBuffers(server);
+			this.prPipeFoldersToLoadFunc(server)
 		};
-
-		this.prAddSynthDefinitions;
-		"Salk synths build".postln;
 	}
 
-	*free { |server|
-		this.prFreeBuffers;
+	*prPipeFoldersToLoadFunc{ | server |
+
+		/*folderPaths.keysDo{|item|
+		"\n\n\t***prPipeFoldersToLoadFunc**\nfolderPath: %\n".format(item).postln
+		};*/
+
+		if (folderPaths.isEmpty.not,{
+			folderPaths.keysValuesDo{ | key, path |
+				this.load(path.asString, server);
+			};
+			"done piping".postln;
+			// update folderPaths to be even with loaded buffers
+			folderPaths.keysDo{ | key |
+				//key.postln;
+				if(buffers.includesKey(key).not,{
+					folderPaths.removeAt(key);
+					"removed % from folderPaths".format(key).postln;
+				}
+			)};
+
+		}, {Error("no folderPaths ?! possibly init/root path is a file").throw});
+	}
+
+	*load { | path, server |
+		var folder = PathName(path);
+		var files, loadedBuffers, folderKey;
+
+		folderKey = folder.folderName.replace(($ ),"_").replace(($-),"_").replace(($,),"").asSymbol;
+
 		server = server ? Server.default;
-		ServerBoot.remove(makeBuffersFn, server);
-		"files freed".postln;
+
+		if (buffers.includesKey(folderKey).not, {
+
+			// check header only return item if it is supported
+			files = folder.entries.select { | file |
+				supportedExtensions.includes(file.extension.toLower.asSymbol)
+			};
+			//"files: %".format(files).postln;
+
+			// load files into buffers
+			loadedBuffers = files.collect { | file |
+				Buffer.readChannel(server, file.fullPath;, channels: [0]).normalize(0.99);
+			};
+
+			//"\n\t loadedBuffers from folder: % --> %".format(folder.folderName,loadedBuffers).postln;
+			//server.sync; // danger danger only working when used before boot use update here instead?
+			//"loading into memory, hang on".postln;
+
+			// add loadedBuffers to dictionary with key from common folder
+			if (loadedBuffers.isEmpty.not, {
+				if (buffers.includesKey(folderKey).not, {
+					"added new folder: % as key %".format(folder.folderName,folderKey).postln;
+					//  add and remove spaces in folder name
+					buffers.add(folderKey -> loadedBuffers);
+				})
+			}, {
+				"no soundfiles in : %, skipped".format(folder.folderName).postln;
+				// update folderPaths
+				//folderPaths.removeAt(folderKey);
+			});
+		}, {"NO NEW FOLDERS FOUND, NO NEW BUFFERS CREATED".postln});
 	}
 
-	*get { |folder, index|
+	*free { | folder, server |
+		// free all no folder specified
+		if (folder.isNil,{
+			if (buffers.isEmpty.not, {
+				this.prFreeBuffers;
+				this.prClearFolderPaths; // also reset parser -> empty dictionary of folder paths
+				server = server ? Server.default;
+				ServerBoot.remove(loadFn, server);
+				"all buffers freed".postln;
+			}, {
+				"no buffers to free".postln
+			})
+		}, { // free only specified folder
+			if (buffers.includesKey(folder), {
+				buffers.keysValuesDo { | item |
+					if (item == folder, {
+						item.do { | buffer |
+							if (buffer.isNil.not, {
+								buffer.free;
+							})
+						}
+					});
+				};
+				buffers.removeAt(folder);
+				"buffers freed and removed".postln;
+			});
+			if (folderPaths.includesKey(folder), {
+				folderPaths.removeAt(folder);
+				"folder paths removed".postln;
+			})
+		});
+	}
+
+	*clearFolderPathsDict {
+		this.prClearFolderPaths;
+	}
+	*randomFolder {
+		^this.folderNum(this.folders.size.rand)
+	}
+
+	*prClearFolderPaths {
+		folderPaths.clear
+	}
+
+	*get { | folder, index |
 		if (buffers.isNil.not) {
-			var bufList = buffers[folder.asSymbol];
-			if (bufList.isNil.not) {
-				index = index % bufList.size;
-				^bufList[index]
+			var bufferGroup = buffers[folder.asSymbol];
+			if (bufferGroup.isNil.not) {
+				index = index % bufferGroup.size;
+				^bufferGroup[index]
 			}
 		};
 		^nil
@@ -107,27 +405,30 @@ Salk {
 		^buffers.keys
 	}
 
+	*size {
+		^this.buffers.values.collect{|i|i.size}.sum
+	}
+
+	// only think i integers
 	*folderNum { |index|
 		var folder;
 
 		if (buffers.isNil.not) {
-
 			^buffers.keys.asArray[index.wrap(0,buffers.keys.size-1)]
 		}
 
 		/*if (buffers.isNil.not) {
-			var folder, bufList;
-			folder =
-			bufList = buffers[folder.asSymbol];
+		var bufferGroup;
 
-			if (bufList.isNil.not) {
-				index = index % bufList.size;
-				"index er % bufList size er %".format(index, bufList.size).postln;
-				^bufList[index]
-			}
+		bufferGroup = buffers[folder.asSymbol];
+
+		if (bufList.isNil.not) {
+		index = index % bufList.size;
+		"index er % bufList size er %".format(index, bufList.size).postln;
+		^bufList[index]
+		}
 		};*/
 		^nil
-
 	}
 
 	*files {
@@ -143,8 +444,8 @@ Salk {
 	}
 
 	*prFreeBuffers {
-		buffers.do { |folders|
-			folders.do { |buf|
+		buffers.do { | folders |
+			folders.do { | buf |
 				if (buf.isNil.not) {
 					buf.free
 				}
@@ -153,31 +454,12 @@ Salk {
 		buffers.clear;
 	}
 
-	*prMakeBuffers { | server |
-		this.prFreeBuffers;
-
-		PathName(dir).entries.do { | subfolder |
-			var entries;
-			entries = subfolder.entries.select { | entry |
-				supportedExtensions.includes(entry.extension.asSymbol)
-			};
-			// monofy entry, no stereo
-			entries = entries.collect { | entry |
-				Buffer.readChannel(server, entry.fullPath, channels: [0])
-			};
-			if (entries.isEmpty.not) {
-				buffers.add(subfolder.folderName.asSymbol -> entries)
-			}
-		};
-
-		"% folders loaded".format(buffers.size).postln;
-	}
-
 	*prAddSynthDefinitions {
+		"building synth definitions".postln;
 		/*	  --------------------------------------  */
 		/*	  rate style							 */
 		/*	  ------------------------------------- */
-		SynthDef(\SalkMono, {
+		SynthDef(\ConvenienceMono, {
 			|
 			bufnum, out = 0, loop = 0, rate = 1, spread = 1, pan = 0, amp = 0.5,
 			attack = 0.01, decay = 0.5, sustain = 0.5, release = 1.0, pos = 0,
@@ -185,7 +467,7 @@ Salk {
 			|
 			var sig, key, frames, env, file;
 			frames = BufFrames.kr(bufnum);
-			sig = SalkBufferPlay.ar(
+			sig = ConvenienceBufferPlay.ar(
 				1,
 				bufnum,
 				rate*BufRateScale.kr(bufnum),
@@ -202,7 +484,7 @@ Salk {
 			Out.ar(out, (sig*env));
 		}).add;
 
-		SynthDef(\SalkStereo, {
+		SynthDef(\ConvenienceStereo, {
 			|
 			bufnum, out = 0, loop = 0, rate = 1, spread = 1, pan = 0, amp = 0.5,
 			attack = 0.01, decay = 0.5, sustain = 0.5, release = 1.0, pos = 0,
@@ -210,7 +492,7 @@ Salk {
 			|
 			var sig, key, frames, env, file;
 			frames = BufFrames.kr(bufnum);
-			sig = SalkBufferPlay.ar(
+			sig = ConvenienceBufferPlay.ar(
 				2,
 				bufnum,
 				rate*BufRateScale.kr(bufnum),
@@ -230,7 +512,7 @@ Salk {
 		/*	  --------------------------------------  */
 		/*	  for scaling, assuming samples are tuned */
 		/*	  ------------------------------------- */
-		SynthDef(\SalkMonoScale, {
+		SynthDef(\ConvenienceMonoScale, {
 			|
 			bufnum, out = 0, loop = 0, spread = 1, pan = 0, amp = 0.5,
 			attack = 0.01, decay = 0.5, sustain = 0.5, release = 1.0, pos = 0,
@@ -239,7 +521,7 @@ Salk {
 			var sig, rate, frames, env, file;
 			frames = BufFrames.kr(bufnum);
 			rate = freq/basefreq;
-			sig = SalkBufferPlay.ar(
+			sig = ConvenienceBufferPlay.ar(
 				1,
 				bufnum,
 				rate*BufRateScale.kr(bufnum),
@@ -256,7 +538,7 @@ Salk {
 			Out.ar(out, (sig*env));
 		}).add;
 
-		SynthDef(\SalkStereoScale, {
+		SynthDef(\ConvenienceStereoScale, {
 			|
 			bufnum, out = 0, loop = 0, spread = 1, pan = 0, amp = 0.5,
 			attack = 0.01, decay = 0.5, sustain = 0.5, release = 1.0, pos = 0,
@@ -265,7 +547,7 @@ Salk {
 			var sig, rate, frames, env, file;
 			frames = BufFrames.kr(bufnum);
 			rate = freq/basefreq;
-			sig = SalkBufferPlay.ar(
+			sig = ConvenienceBufferPlay.ar(
 				2,
 				bufnum,
 				rate*BufRateScale.kr(bufnum),
@@ -286,9 +568,9 @@ Salk {
 		/*	  bfft filter bins				synth	 */
 		/*	  ------------------------------------- */
 		~frame = 1024;
-		SynthDef(\SalkBufBins, { | bufnum, out = 0, win = 1, loop = 0, spread = 1, pan = 0, amp = 0.5,
-		binRange =#[0, 512], gate = 1, attack = 0.01, decay = 0.01, sustain = 2,
-		release = 0.01, pos = 0, rate = 1 |
+		SynthDef(\ConvenienceBufBins, { | bufnum, out = 0, win = 1, loop = 0, spread = 1, pan = 0, amp = 0.5,
+			binRange =#[0, 512], gate = 1, attack = 0.01, decay = 0.01, sustain = 2,
+			release = 0.01, pos = 0, rate = 1 |
 			var in, chain, env, frames, sig;
 			frames = BufFrames.kr(bufnum);
 			env = EnvGen.ar(Env.adsr(attack, decay, sustain, release), gate, doneAction: 2);
@@ -303,9 +585,9 @@ Salk {
 			Out.ar(out, sig);
 		}).add;
 
-		SynthDef(\SalkBufBinsScale, { | bufnum, out = 0, win = 1, loop = 0, spread = 1, pan = 0, amp = 0.5,
-		binRange =#[0, 512], gate = 1, attack = 0.01, decay = 0.01, sustain = 2,
-		release = 0.01, pos = 0, basefreq=440, freq |
+		SynthDef(\ConvenienceBufBinsScale, { | bufnum, out = 0, win = 1, loop = 0, spread = 1, pan = 0, amp = 0.5,
+			binRange =#[0, 512], gate = 1, attack = 0.01, decay = 0.01, sustain = 2,
+			release = 0.01, pos = 0, basefreq=440, freq |
 			var in, chain, env, frames, rate, sig;
 			frames = BufFrames.kr(bufnum);
 			rate = freq/basefreq;
@@ -324,30 +606,32 @@ Salk {
 		/*	  --------------------------------------  */
 		/*	  bfft filter bins input		synth	 */
 		/*	  ------------------------------------- */
-		/*SynthDef(\SalkInBins, { | out = 0, in = 0, win = 1, amp = 0.5,
+		/*SynthDef(\ConvenienceInBins, { | out = 0, in = 0, win = 1, amp = 0.5,
 		binRange =#[0, 512], gate = 1, attack = 0.01, decay = 0.01, sustain = 2,
 		release = 0.01, rate = 1 |
-			var sig, chain, env;
-			env = EnvGen.ar(Env.adsr(attack, decay, sustain, release), gate, doneAction: 2);
-			sig = SoundIn.ar(in);
-			chain = FFT(LocalBuf(~frame), sig);
-			chain = chain.pvcollect(~frame, {| mag, phase, index |
-				if(index >= binRange[0], if(index <= binRange[1], mag, 0), 0);
-			}, frombin: 0, tobin: (~frame / 2) - 1, zeroothers: 0);
-			Out.ar(out, IFFT(chain, win) * amp * env);
+		var sig, chain, env;
+		env = EnvGen.ar(Env.adsr(attack, decay, sustain, release), gate, doneAction: 2);
+		sig = SoundIn.ar(in);
+		chain = FFT(LocalBuf(~frame), sig);
+		chain = chain.pvcollect(~frame, {| mag, phase, index |
+		if(index >= binRange[0], if(index <= binRange[1], mag, 0), 0);
+		}, frombin: 0, tobin: (~frame / 2) - 1, zeroothers: 0);
+		Out.ar(out, IFFT(chain, win) * amp * env);
 		}).add;*/
 
+		synthsBuild = true;
+		"Convenience synths build".postln;
 	}
 
 	*prAddEventType {
-		Event.addEventType(\Salk, {
+		Event.addEventType(\Convenience, {
 			var numChannels, scaling, fft;
 
 			if (~buf.isNil) {
 				var folder = ~folder;
 				if (folder.isNil.not) {
 					var index = ~index ? 0;
-					~buf = Salk.get(folder, index)
+					~buf = Convenience.get(folder, index)
 				} {
 					var sample = ~sample;
 					if (sample.isNil.not) {
@@ -355,7 +639,7 @@ Salk {
 						pair = sample.split($:);
 						folder = pair[0].asSymbol;
 						index = if (pair.size == 2) { pair[1].asInt } { 0 };
-						~buf = Salk.get(folder, index)
+						~buf = Convenience.get(folder, index)
 					}
 				}
 			};
@@ -369,26 +653,26 @@ Salk {
 
 			case
 			{fft == 1 and: scaling == 0} {
-				~instrument = \SalkBufBins;
+				~instrument = \ConvenienceBufBins;
 				//"FFT".postln;
 			}
 			{fft == 1 and: scaling == 1} {
-				~instrument = \SalkBufBinsScale;
+				~instrument = \ConvenienceBufBinsScale;
 				//"FFT+SCALING".postln;
 			}
 			{scaling == 1 and: fft == 0} {
 				//"SCALING -- ".post;
 				switch(numChannels,
 					1, {
-						~instrument = \SalkMonoScale;
+						~instrument = \ConvenienceMonoScale;
 						//"mono".postln;
 					},
 					2, {
-						~instrument = \SalkStereoScale;
+						~instrument = \ConvenienceStereoScale;
 						//"stereo".postln;
 					},
 					{
-						~instrument = \SalkMonoScale;
+						~instrument = \ConvenienceMonoScale;
 						//"mono-default".postln;
 					}
 				);
@@ -398,15 +682,15 @@ Salk {
 				//"NORMALES -- ".post;
 				switch(numChannels,
 					1, {
-						~instrument = \SalkMono;
+						~instrument = \ConvenienceMono;
 						//"mono".postln;
 					},
 					2, {
-						~instrument = \SalkStereo;
+						~instrument = \ConvenienceStereo;
 						//"stereo".postln;
 					},
 					{
-						~instrument = \SalkMono;
+						~instrument = \ConvenienceMono;
 						//"mono-default".postln;
 					}
 				);
@@ -418,6 +702,7 @@ Salk {
 		});
 	}
 
+	// thanks to balínt
 	*buckets {| frame = 1024, numBands = 4, band = 0 |
 		var result, coeff, binLow, binHigh;
 
@@ -449,8 +734,8 @@ Salk {
 }
 
 
-SalkBufferPlay {
-	// stolen PlayBufCF
+ConvenienceBufferPlay {
+	// copy of PlayBufCF
 	*ar { arg numChannels, bufnum=0, rate=1.0, trigger=1.0, startPos=0.0, loop = 0.0,
 		lag = 0.1, n = 2; // alternative for safemode
 
