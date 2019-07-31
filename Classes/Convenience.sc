@@ -3,7 +3,7 @@
 // ++ config setup for hvornår tilstanden skal slå ind / ændres
 Convenience {
 	classvar <dir, <buffers, <folderPaths;
-	classvar /*makeBuffersFn, */loadFn;
+	classvar loadFn;
 	classvar loadSynths = true;
 	classvar synthsBuild = false;
 
@@ -14,7 +14,7 @@ Convenience {
 		folderPaths = Dictionary.new;
 		loadFn = #{ | server | Convenience.prPipeFoldersToLoadFunc(server) };
 		this.prAddEventType;
-		"init".postln;
+		"\nConvenience is possible".postln;
 	}
 
 	*p { | name, type=\Convenience, out = 0, folder, index = 1, dur = 8, stretch = 1.0,
@@ -209,9 +209,9 @@ Convenience {
 	*prParseFolders{ | initpath, depth = 0, server |
 		var initPathDepthCount = 0;
 
-		/*"\n__prParseFolders__".post;
-		"\n\tinitpath: %".format(initpath).post;
-		"\n\tdepth: %\n".format(depth).postln;*/
+		//"\n__prParseFolders__".post;
+		//"\n\tinitpath: %".format(initpath).post;
+		//"\n\tdepth: %\n".format(depth).postln;
 
 		server = server ? Server.default;
 
@@ -237,24 +237,21 @@ Convenience {
 
 			// folder depth control
 			item.pathOnly.do{ | char |
-				//char.postln;
-				if (char == $/, {
-					//"char was /".postln;
+				// linux      /    windows    \\
+				if (char == ($/) || char == ($\\), {
 					if (depthCounter <= depth, {
 						loadFolderFlag = true;
-						//"true".postln;
 						depthCounter = depthCounter+1;
-					}, { loadFolderFlag = false; /*"false".postln;*/});
-					//depthCounter.postln;
+					}, { loadFolderFlag = false; 
+					});
 				})
 			};
 
 			//"parser checking: %".format(item.pathOnly).postln;
-
 			//"after depth control loadFolderFlag is %".format(loadFolderFlag).postln;
 
 			if (loadFolderFlag == true, {
-				"_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/".scramble.postln;
+				//"_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/".scramble.postln;
 				// add to folderPaths if not already present
 				if (folderPaths.includesKey(item.folderName.replace(($ ),"_").replace(($-),"_").replace(($,),"").asSymbol).not, {
 					folderPaths.add(item.folderName.replace(($ ),"_").replace(($-),"_").replace(($,),"").asSymbol -> item.pathOnly.asSymbol);
@@ -269,14 +266,13 @@ Convenience {
 			//"parser_iteration".postln;
 		};
 
-		/*folderPaths.keysDo{ | item |
-		"\n\t__prParseFolders__folderPath: %\n".format(item).postln
-		};*/
-
+		//folderPaths.keysDo{ | item |
+		//"\n\t__prParseFolders__folderPath: %\n".format(item).postln
+		//};
 		//if (folderPaths.isEmpty, {Error("\n\n\n\tfolderPaths is EMPTY!\n\n\n\n").throw});
 
+		// stage work for boot up
 		ServerBoot.add(loadFn, server);
-
 		// if server is running create rightaway
 		if (server.serverRunning) {
 			this.prPipeFoldersToLoadFunc(server)
