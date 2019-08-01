@@ -289,7 +289,6 @@ Convenience {
 				// linux      /    windows    \\
 				if (char == ($/) || (char == ($\\)), {
 					if (depthCounter <= depth, {
-						"yoyo".postln;
 						loadFolderFlag = true;
 						depthCounter = depthCounter+1;
 					}, { loadFolderFlag = false;
