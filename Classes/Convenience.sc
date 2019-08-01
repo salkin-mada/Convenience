@@ -287,11 +287,12 @@ Convenience {
 			// folder depth control
 			item.pathOnly.do{ | char |
 				// linux      /    windows    \\
-				if (char == ($/) || char == ($\\), {
+				if (char == ($/) || (char == ($\\)), {
 					if (depthCounter <= depth, {
+						"yoyo".postln;
 						loadFolderFlag = true;
 						depthCounter = depthCounter+1;
-					}, { loadFolderFlag = false; 
+					}, { loadFolderFlag = false;
 					});
 				})
 			};
@@ -318,7 +319,7 @@ Convenience {
 		//folderPaths.keysDo{ | item |
 		//"\n\t__prParseFolders__folderPath: %\n".format(item).postln
 		//};
-		//if (folderPaths.isEmpty, {Error("\n\n\n\tfolderPaths is EMPTY!\n\n\n\n").throw});
+		if (folderPaths.isEmpty, {Error("\n\n\n\tfolderPaths is EMPTY!\n\n\n\n").throw});
 
 		// stage work for boot up
 		ServerBoot.add(loadFn, server);
