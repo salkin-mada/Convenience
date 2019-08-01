@@ -1,11 +1,17 @@
 // implement protector condition
 // ihværksæt beskyttelses tilstand
+// + Scale.names[32.wrap(0, Scale.names.size-1)].asString = method --> Convenience.scaleNum
 // ++ config setup for hvornår tilstanden skal slå ind / ændres
+// +++tillæg en beskytter for at loade en mappe med samme navn i en anden sti...?
+
 Convenience {
 	classvar <dir, <buffers, <folderPaths;
 	classvar loadFn;
-	classvar loadSynths = true;
 	classvar synthsBuild = false;
+
+	// config begin
+	classvar loadSynths = true;
+	// config end
 
 	const <supportedExtensions = #[\wav, \wave, \aif, \aiff, \flac];
 
@@ -25,13 +31,18 @@ Convenience {
 
 		//var return;
 
-		if(name.isNil,{"needs a key aka name, please".throw; ^nil});
+		if (synthsBuild, {
+			if(name.isNil,{"needs a key aka name, please".throw; ^nil});
 
-		if(folder.isNil, {
+		// if folder is unspecified in Convenience.p func
+		if (folder.isNil, {
 			if(Convenience.folders.asArray[0].isNil.not, {
-				folder = Convenience.folders.asArray[0]
-			}, {"not init corr no folder avai".throw; ^nil})
+				folder = Convenience.folders.asArray[0];
+				"choosing first bufferGroup".postln;
+			}, {Error("not init corr no folder avai").throw; ^nil})
 		});
+
+		// if scale is not set choose classic chromatic
 		if(scale.isNil, {
 			scale = Scale.chromatic;
 		});
@@ -44,6 +55,16 @@ Convenience {
 				\basefreq, basefreq,
 				\out, out,
 				\folder, folder,
+				// \folder, Pfunc({ | folder |
+				// 	// id called folder does not exist, choose an existing one
+				// 	if (Convenience.buffers.includesKey(folder).not, {
+				// 		"cant find queried folder: %".format(folder).postln;
+				// 		if(Convenience.folders.asArray[0].isNil.not, {
+				// 		folder = Convenience.folders.asArray[0];
+				// 		"replacing with: %".format(folder).postln;
+				// 		}, {Error("not init corr no folder avai").throw; ^nil})
+				// 	});
+				// }),
 				\index, index,
 				\dur, dur,
 				\stretch, stretch,
@@ -66,9 +87,9 @@ Convenience {
 				\binRange, binRange
 			);
 		).play(TempoClock(tempo));
-
-		//return = name;
-		//^return;
+		}, {
+			"Convenience::synths not added".postln;
+		});
 	}
 
 	*s { | name |
@@ -84,25 +105,43 @@ Convenience {
 		if (initpath.isNil, {
 			var cond = Condition(false);
 			var win, sink, sinkColor, depthSetter;
+			var crawlerWindowStayOpen = false;
 
-			win = Window.new("ZzZzzzZZ.crawl"/*, resizable: false*/).front;
-			win.setInnerExtent(260,290);
+			win = Window.new("ZzZzzzZZ.crawl"/*, resizable: false*/)
+			.background_(Color.white)
+			.alwaysOnTop_(true)
+			.front;
+			win.setInnerExtent(260,310);
 
 			StaticText(win, Rect(20, 10, 220, 25)).align_(\center)
 			.stringColor_(Color.green)
 			.background_(Color.black)
-			.string_(" choose init path for crawler ");
+			.string_(" choose init path for crawler ")
+			.font_(Font(size:16));
+
+			Button(win, Rect(15,35,230,25))
+			.states_([
+				["closing when done", Color.white, Color.blue],
+				["staying open", Color.black, Color.magenta]
+			])
+			.font_(Font(size:14))
+			.action_({ | state |
+				crawlerWindowStayOpen = state.value.asBoolean;
+				//"state value: ".post;
+				//state.value.asBoolean.postln;
+			});
 
 			// receive path
-			sink = DragSink(win, Rect(10, 40, 240, 240)).align_(\center);
+			sink = DragSink(win, Rect(10, 60, 240, 240)).align_(\center);
 			sinkColor = Color.white;
 			sink.string = "drop folder here and init crawl";
 			sink.stringColor_(Color.blue(1.0));
-			sink.background_(sinkColor);
+			sink.background_(sinkColor)
+			.font_(Font(size:12));
 
 
-			StaticText(win,Rect(70, 50, 130, 30)).string_("set depth ->");
-			depthSetter = TextField(win, Rect(165, 50, 40, 30)).align_(\center);
+			StaticText(win,Rect(70, 70, 130, 30)).string_("set depth ->");
+			depthSetter = TextField(win, Rect(165, 70, 40, 30)).align_(\center);
 			depthSetter.string_(depth);
 			depthSetter.background_(Color.blue(alpha:0));
 			depthSetter.action_{ | str |
@@ -151,7 +190,7 @@ Convenience {
 				sink.string = "good choice!";
 				sink.background_(Color.green);
 
-				{ // Routine for Condition trigger and feedback
+				{// Routine for Condition trigger and feedback
 					0.4.wait;
 
 					// do real work behind sillyness
@@ -171,10 +210,19 @@ Convenience {
 					};
 					sink.stringColor_(Color.green);
 					sink.string = "done crawling";
-					0.4.wait;
-
-
-					win.close;
+					//"\nother routine autoClose bool is %\n".format(crawlerWindowStayOpen).postln;
+					if (crawlerWindowStayOpen == true, {
+						2.0.wait;
+						// reset, ready for more
+						sink.string = "drop folder here and init crawl";
+						sink.stringColor_(Color.blue(1.0));
+						sink.background_(sinkColor);
+					}, {
+						crawlerWindowStayOpen.postln;
+						"CCCCCCCCC".postln;
+						0.4.wait;
+						win.close
+					});
 				}.fork(AppClock);
 				// gui feeback for humans end
 
@@ -197,7 +245,7 @@ Convenience {
 		});
 
 		// load synths on/off
-		if (loadSynths, {
+		if (loadSynths == true, {
 			// add synths if not already done
 			if (synthsBuild.not,{
 				this.prAddSynthDefinitions;
@@ -384,6 +432,12 @@ Convenience {
 
 	*prClearFolderPaths {
 		folderPaths.clear
+	}
+
+	* addSynths {
+		if (synthsBuild.not,{
+				this.prAddSynthDefinitions;
+		});
 	}
 
 	*get { | folder, index |
@@ -698,7 +752,7 @@ Convenience {
 		});
 	}
 
-	// thanks to balínt
+	// thanks to Bálint Laczkó
 	*buckets {| frame = 1024, numBands = 4, band = 0 |
 		var result, coeff, binLow, binHigh;
 
