@@ -27,6 +27,7 @@ Convenience {
 		pos = 0, loop = 0, rate = 1, degree = 0, octave = 3, root = 0, scale,
 		cutoff = 22e3, bass = 0, pan = 0, spread = 0, amp = 0.5, attack = 0.1,
 		decay = 0.5, sustain=1.0, release = 0.5, tempo = 2.0, tuningOnOff = 0,
+		pattack = 0.0, pdecay = 0.0, psustain=1.0, prelease = 9e3,
 		basefreq = 440, fftOnOff = 0, binRange = 20 |
 
 		//var return;
@@ -70,7 +71,7 @@ Convenience {
 				\stretch, stretch,
 				\pos, pos,
 				\loop, loop,
-				\rate, rate,
+				\rate, rate, \pattack, pattack, \pdecay, pdecay, \psustain, psustain, \prelease, prelease,
 				\degree, degree,
 				\octave, octave,
 				\root, root,
@@ -513,14 +514,17 @@ Convenience {
 			|
 			bufnum, out = 0, loop = 0, rate = 1, spread = 1, pan = 0, amp = 0.5,
 			attack = 0.01, decay = 0.5, sustain = 0.5, release = 1.0, pos = 0,
+			pattack = 0.0, pdecay = 0.0, psustain = 1.0, prelease = 100.0,
+			// long hack.. when penv is not in use, penv should always be longer than env
 			gate = 1, cutoff = 22e3, bass = 0.0
 			|
-			var sig, key, frames, env, file;
+			var sig, key, frames, env, penv, file;
+			penv = EnvGen.ar(Env.adsr(pattack, pdecay, psustain, prelease), gate);
 			frames = BufFrames.kr(bufnum);
 			sig = ConvenienceBufferPlay.ar(
 				1,
 				bufnum,
-				rate*BufRateScale.kr(bufnum),
+				rate*BufRateScale.kr(bufnum)*penv,
 				1,
 				pos*frames,
 				loop: loop
