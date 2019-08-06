@@ -35,59 +35,59 @@ Convenience {
 		if (synthsBuild, {
 			if(name.isNil,{"needs a key aka name, please".throw; ^nil});
 
-		// if folder is unspecified in Convenience.p func
-		if (folder.isNil, {
-			if(Convenience.folders.asArray[0].isNil.not, {
-				folder = Convenience.folders.asArray[0];
-				"choosing first bufferGroup".postln;
-			}, {Error("not init corr no folder avai").throw; ^nil})
-		});
+			// if folder is unspecified in Convenience.p func
+			if (folder.isNil, {
+				if(Convenience.folders.asArray[0].isNil.not, {
+					folder = Convenience.folders.asArray[0];
+					"choosing first bufferGroup".postln;
+				}, {Error("not init corr no folder avai").throw; ^nil})
+			});
 
-		// if scale is not set choose classic chromatic
-		if(scale.isNil, {
-			scale = Scale.chromatic;
-		});
+			// if scale is not set choose classic chromatic
+			if(scale.isNil, {
+				scale = Scale.chromatic;
+			});
 
-		Pdef(name,
-			Pbind(
-				\type, type,
-				\fftOnOff, fftOnOff,
-				\tuningOnOff, tuningOnOff,
-				\basefreq, basefreq,
-				\out, out,
-				\folder, folder,
-				// \folder, Pfunc({ | folder |
-				// 	// id called folder does not exist, choose an existing one
-				// 	if (Convenience.buffers.includesKey(folder).not, {
-				// 		"cant find queried folder: %".format(folder).postln;
-				// 		if(Convenience.folders.asArray[0].isNil.not, {
-				// 		folder = Convenience.folders.asArray[0];
-				// 		"replacing with: %".format(folder).postln;
-				// 		}, {Error("not init corr no folder avai").throw; ^nil})
-				// 	});
-				// }),
-				\index, index,
-				\dur, dur,
-				\stretch, stretch,
-				\pos, pos,
-				\loop, loop,
-				\rate, rate, \pattack, pattack, \pdecay, pdecay, \psustain, psustain, \prelease, prelease,
-				\degree, degree,
-				\octave, octave,
-				\root, root,
-				\scale, scale,
-				\cutoff, cutoff,
-				\bass, bass,
-				\pan, pan,
-				\spread, spread,
-				\amp, amp,
-				\attack, attack,
-				\decay, decay,
-				\sustain, sustain,
-				\release, release,
-				\binRange, binRange
-			);
-		).play(TempoClock(tempo));
+			Pdef(name,
+				Pbind(
+					\type, type,
+					\fftOnOff, fftOnOff,
+					\tuningOnOff, tuningOnOff,
+					\basefreq, basefreq,
+					\out, out,
+					\folder, folder,
+					// \folder, Pfunc({ | folder |
+					// 	// id called folder does not exist, choose an existing one
+					// 	if (Convenience.buffers.includesKey(folder).not, {
+					// 		"cant find queried folder: %".format(folder).postln;
+					// 		if(Convenience.folders.asArray[0].isNil.not, {
+					// 		folder = Convenience.folders.asArray[0];
+					// 		"replacing with: %".format(folder).postln;
+					// 		}, {Error("not init corr no folder avai").throw; ^nil})
+					// 	});
+					// }),
+					\index, index,
+					\dur, dur,
+					\stretch, stretch,
+					\pos, pos,
+					\loop, loop,
+					\rate, rate, \pattack, pattack, \pdecay, pdecay, \psustain, psustain, \prelease, prelease,
+					\degree, degree,
+					\octave, octave,
+					\root, root,
+					\scale, scale,
+					\cutoff, cutoff,
+					\bass, bass,
+					\pan, pan,
+					\spread, spread,
+					\amp, amp,
+					\attack, attack,
+					\decay, decay,
+					\sustain, sustain,
+					\release, release,
+					\binRange, binRange
+				);
+			).play(TempoClock(tempo));
 		}, {
 			"Convenience::synths not added".postln;
 		});
@@ -219,8 +219,6 @@ Convenience {
 						sink.stringColor_(Color.blue(1.0));
 						sink.background_(sinkColor);
 					}, {
-						crawlerWindowStayOpen.postln;
-						"CCCCCCCCC".postln;
 						0.4.wait;
 						win.close
 					});
@@ -300,11 +298,21 @@ Convenience {
 			//"after depth control loadFolderFlag is %".format(loadFolderFlag).postln;
 
 			if (loadFolderFlag == true, {
-				//"_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/".scramble.postln;
+				var folderKey;
+				folderKey = item.folderName
+				.replace(($ ),"_")
+				.replace(($-),"_")
+				.replace(($,),"")
+				.replace(($+),"")
+				/*		.replace(($æ),"ae")
+				.replace(($ø),"o")
+				.replace(($å),"aa")*/
+				.asSymbol;
+				//folderKey = item.folderName.replace(($ ),"_").replace(($-),"_").replace(($,),"").replace(($+),"").asSymbol;
 				// add to folderPaths if not already present
-				if (folderPaths.includesKey(item.folderName.replace(($ ),"_").replace(($-),"_").replace(($,),"").asSymbol).not, {
-					folderPaths.add(item.folderName.replace(($ ),"_").replace(($-),"_").replace(($,),"").asSymbol -> item.pathOnly.asSymbol);
-					//"added % to folderPaths".format(item.pathOnly.asSymbol).postln;
+				if (folderPaths.includesKey(folderKey).not, {
+					folderPaths.add(folderKey -> item.pathOnly.asSymbol);
+					//"added % to folderPaths".format(folderKey).postln;
 				}, {
 					// folder already added to folderPaths
 					/*"folder % included in folderPaths will not be added again".format(
@@ -354,8 +362,16 @@ Convenience {
 	*load { | path, server |
 		var folder = PathName(path);
 		var files, loadedBuffers, folderKey;
-
-		folderKey = folder.folderName.replace(($ ),"_").replace(($-),"_").replace(($,),"").asSymbol;
+		folderKey = folder.folderName
+		.replace(($ ),"_")
+		.replace(($-),"_")
+		.replace(($,),"")
+		.replace(($+),"")
+		/*		.replace(($æ),"ae")
+		.replace(($ø),"o")
+		.replace(($å),"aa")*/
+		.asSymbol;
+		//folderKey = folder.folderName.replace(($ ),"_").replace(($-),"_").replace(($,),"").asSymbol;
 
 		server = server ? Server.default;
 
@@ -437,7 +453,7 @@ Convenience {
 
 	* addSynths {
 		if (synthsBuild.not,{
-				this.prAddSynthDefinitions;
+			this.prAddSynthDefinitions;
 		});
 	}
 
