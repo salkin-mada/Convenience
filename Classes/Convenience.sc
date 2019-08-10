@@ -26,7 +26,7 @@ Convenience {
 	*p { | name, type=\Convenience, out = 0, folder, index = 1, dur = 8, stretch = 1.0,
 		pos = 0, loop = 0, rate = 1, degree = 0, octave = 3, root = 0, scale,
 		cutoff = 22e3, bass = 0, pan = 0, spread = 0, amp = 0.5, attack = 0.1,
-		decay = 0.5, sustain=1.0, release = 0.5, tempo = 2.0, tuningOnOff = 0,
+		decay = 0.5, sustain=1.0, release = 0.5, tempo, tuningOnOff = 0,
 		pattack = 0.0, pdecay = 0.0, psustain=1.0, prelease = 9e3,
 		basefreq = 440, fftOnOff = 0, binRange = 20 |
 
@@ -47,6 +47,24 @@ Convenience {
 			if(scale.isNil, {
 				scale = Scale.chromatic;
 			});
+
+			"tempo pre ****** %".format(tempo.class).postln;
+
+			// check if Utopia is in Class library
+			if ( Main.packages.asDict.includesKey(\Utopia) == true, {
+				"\n\tConvenience:: Utopia is possible\n".postln;
+				if (tempo.class == BeaconClock, {
+					// great do nothing
+					"\ttempo is BeaconClock controlled".postln
+				}, {
+					tempo = TempoClock(tempo);
+					"\tusing tempoclock".postln;
+				})
+			}, {
+				"Convenience suggests to install Utopia Quark".postln;
+				tempo = TempoClock(tempo);
+			});
+
 
 			Pdef(name,
 				Pbind(
@@ -87,7 +105,7 @@ Convenience {
 					\release, release,
 					\binRange, binRange
 				);
-			).play(TempoClock(tempo));
+			).play(tempo);
 		}, {
 			"Convenience::synths not added".postln;
 		});
@@ -404,7 +422,7 @@ Convenience {
 				// update folderPaths
 				//folderPaths.removeAt(folderKey);
 			});
-		}, {"NO NEW FOLDERS FOUND, NO NEW BUFFERS CREATED".postln});
+		}, {"folder % already loaded".format(folderKey).postln});
 	}
 
 	*free { | folder, server |
