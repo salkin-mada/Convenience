@@ -42,19 +42,19 @@ Opens a window where you can drag and drop folders + control "loading depth" i.e
 
 start crawling immedeately from given path into its tree
 
-Both creates a dict of `Buffer`'s loaded with the audio files from the folders of audio files at the given path.
+Both creates a dict of `Buffer`'s loaded with the audio files from the folders found in the given directory tree (path).
 
 Each folder's contents are accessible as an array of buffers at a dict key based on the folder name formatted into a usable key (name/group id).
 
 `Convenience.p(\name)`
 
-create and start a convenient sequencer with a name
+create and start a convenient sequencer, giving it a name is the minimum requirement
 
 `Convenience.get(folder, index)`
 
 Returns the `Buffer` of file at index in chosen folder - if queried index is to high it will wrap around the size of files in the chosen folder until it finds an existing index, no need to worry about asking or a file number which is not there.
 
-`ZzzZzZzzzZz` can be used as a "left-hander" instead of the "two-hander" Convenience.
+`ZzzZzZzzzZz` can be used as a "left-hander" instead of the "two-hander" Convenience. :)
 
 ## Example
 
@@ -65,23 +65,28 @@ z = Convenience;
 z.crawl
 
 // no gui usage
-z.crawl(Platform.resourceDir +/+ "sounds/a11wlk01.wav", depth: 2)
+z.crawl(Platform.resourceDir +/+ "sounds", depth: 0)
 
 z.list // get some info of what went down
 
 //minimum
 z.p(\lay); // play at the beginning of first file in first folder
+z.s(\lay); // stop
 
 // play
+(
 z.p(\lay,
 	tempo: 8.0,
 	out: 0,  // all Convenience synths outputs stereo, 2 channels
-	index: 755,
+    folder: \sounds,
+	index: Prand([1,2,3], inf),
+	pos: Pwhite(0.2,0.7),
 	dur: Pseq([1,3,Rest(2),2], inf),
 	rate: Pwhite(0.9,1.0) * Pstep([0.4,0.9,0.2], Prand([3,5,8], inf), inf),
 	pan: Pwhite(-0.65,0.65),
-	amp: 0.2
+	amp: 0.4
 );
+)
 
 // slay
 z.s(\lay)
