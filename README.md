@@ -54,6 +54,7 @@ create and start a convenient sequencer, giving it a name is the minimum require
 
 Returns the `Buffer` of file at index in chosen folder - if queried index is to high it will wrap around the size of files in the chosen folder until it finds an existing index. Also if chosen folder does not exist it will default to first one in the dictionary of loaded folders.
 No need to worry about asking for a file number or folder key which is not there.
+This is true for both the `.get` and `.p` method.
 
 `ZzzZzZzzzZz` can be used as a "left-hander" instead of the "two-hander" Convenience. :)
 

@@ -1,35 +1,59 @@
 CLASS:: Convenience
 
-SUMMARY:: Ease
+SUMMARY:: Load audio files into collections of buffers and sequence them
 
-CATEGORIES:: Template
+CATEGORIES:: Monster, Semi Undocumented Classes
 
 RELATED:: Classes/non
 
 
-
 DESCRIPTION::
 
-Language side "something"
-
-
-
+A tool for discovering surprising audio file mixtures.
 
 
 CLASSMETHODS::
 
+METHOD:: crawl
+
+crawler loads folders of files for you
+
+METHOD:: p
+
+create a pattern sequencer and play it
+
+METHOD:: s
+
+stop pattern sequencer
+
+METHOD:: get
+
+return Buffer at folderkey and index
+
+METHOD:: free
+
+free buffers
+
+METHOD:: size
+
+returns number of files loaded in total
+
+METHOD:: list
+posts loaded folder keys and number of files in them
+and returns a dictionary with folder keys and buffers
+
+METHOD:: folders
+
+returns a set of loaded folder keys
+
+METHOD:: randomFolder
+
+return random folder key
 
 
-METHOD:: new
+METHOD:: folderNum
 
-
-
-
-
-ARGUMENT:: server
-
-If code::nil:: then the default server will be used.
-
+returns folder key at dict key index, if you need to think in integers
 
 
 
@@ -40,30 +64,40 @@ INSTANCEMETHODS::
 
 PRIVATE:: Cnitconvenience, prSynthName
 
-
-
-
-
-METHOD:: mute
-
-silence (boolean)
-
-
-
-
 EXAMPLES::
-
-
 
 CODE::
 
-Convenience.loadFolders("Z:/aFolder/withFoldersWithFiles");
-Convenience.folders
-Convenience.get(\tg500_fx, 2).path
+z = Convenience;
+// or
+z = ZzzZzZzzzZz;
+
+/* crawler loads folders in its way */
+z.crawl
+
+// no gui usage
+z.crawl(Platform.resourceDir +/+ "sounds", depth: 0)
+
+z.folderPaths // ses what folderPaths crawler found
+s.boot;
+z.list // get some info of what went down after boot
 
 //minimum
-Convenience.p(\lay); // play first file in first folder
-Convenience.s(\lay) // stop
+z.p(\lay); // play at the beginning of first file in first folder
+z.s(\lay); // stop
 
-// for more see the usage folder
+// play
+z.p(\lay,
+    tempo: 8.0,
+    folder: \sounds,
+    index: Prand([1,2,3], inf),
+    pos: Pwhite(0.2,0.7),
+    dur: Pseq([1,3,Rest(2),2], inf),
+    rate: Pwhite(0.9,1.0) * Pstep([0.4,0.9,0.2], Prand([3,5,8], inf), inf),
+    pan: Pwhite(-0.65,0.65),
+    amp: 0.4
+);
+
+// slay
+z.s(\lay)
 ::
