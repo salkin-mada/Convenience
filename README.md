@@ -52,7 +52,8 @@ create and start a convenient sequencer, giving it a name is the minimum require
 
 `Convenience.get(folder, index)`
 
-Returns the `Buffer` of file at index in chosen folder - if queried index is to high it will wrap around the size of files in the chosen folder until it finds an existing index, no need to worry about asking or a file number which is not there.
+Returns the `Buffer` of file at index in chosen folder - if queried index is to high it will wrap around the size of files in the chosen folder until it finds an existing index. Also if chosen folder does not exist it will default to first one in the dictionary of loaded folders.
+No need to worry about asking for a file number or folder key which is not there.
 
 `ZzzZzZzzzZz` can be used as a "left-hander" instead of the "two-hander" Convenience. :)
 
@@ -76,8 +77,9 @@ z.p(\lay); // play at the beginning of first file in first folder
 z.s(\lay); // stop
 
 // play
-z.p(\lay,
-	tempo: 8.0,
+z.p(
+    \lay,
+    tempo: 8.0,
     folder: \sounds,
     index: Prand([1,2,3], inf),
     pos: Pwhite(0.2,0.7),
