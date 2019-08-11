@@ -12,7 +12,7 @@ It is a great tool for discovering surprising audio file mixtures.
 Convenience has a crawler method that can recursively go through a directory tree. And load buffers catalogued together in keys related to their placement in the tree.
 
 It can sequence between folders and files, while controlling playback position, pitch/rate, amplitude and pitch envelopes, fft-filtering and more.
-Several Convenience sequencer/pattern instances can run side by side.
+Several Convenience sequencer/pattern instances can run side by side, as independent tracks.
 It is Pattern Class based so you can do your usual pattern grub but with obvious limitations in regard to the more demanding Pattern Class usages.
 
 It can load and remove buffer groups (folders of audio files) while playing.
@@ -22,7 +22,7 @@ Convenience is a good friend of fast ram and a lot of it.
 This Class is a work in progress. It is unstable. It can change in ways where saved usage of the Class does not function any more.
 
 ## Convenience is
-at ease, comfortable, commodious, well-to-do, leisurely, unconstrained, natural, spontaneous, informal, free and easy, loose, forthright, calm, peaceful, tranquil, careless, carefree, untroubled, relaxed, equable, hospitable, on easy street.
+at ease, comfortable, leisurely, spontaneous, free and easy, loose, forthright, calm, peaceful, tranquil, careless, carefree, untroubled, relaxed, equable, hospitable, on easy street.
 
 simple, facile, effortless, obvious, apparent, clear, uncomplicated, elementary, yielding, easily done, not burdensome, requiring not so much effort, presenting few difficulties, smooth, manageable, accessible, wieldy, straightforward, semi foolproof, slight, mere, light, undemanding,
 

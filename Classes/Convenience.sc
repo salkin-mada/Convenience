@@ -1,14 +1,7 @@
-// implement protector condition
-// ihværksæt beskyttelses tilstand
-// + Scale.names[32.wrap(0, Scale.names.size-1)].asString = method --> Convenience.scaleNum
-// ++ config setup for hvornår tilstanden skal slå ind / ændres
-// +++tillæg en beskytter for at loade en mappe med samme navn i en anden sti...?
-
 Convenience {
 	classvar <dir, <buffers, <folderPaths;
 	classvar loadFn;
-	classvar synthsBuild = false;
-
+	
 	// config begin
 	classvar loadSynths = true;
 	// config end
@@ -28,11 +21,11 @@ Convenience {
 		cutoff = 22e3, bass = 0, pan = 0, spread = 0, amp = 0.5, attack = 0.1,
 		decay = 0.5, sustain=1.0, release = 0.5, tempo, tuningOnOff = 0,
 		pattack = 0.0, pdecay = 0.0, psustain=1.0, prelease = 9e3,
-		basefreq = 440, fftOnOff = 0, binRange = 20 |
+		basefreq = 440, fftOnOff = 0, binRange = 20, pitchShiftOnOff = 0, pitchRatio = 1.0, formantRatio = 1.0 |
 
 		//var return;
 
-		if (synthsBuild, {
+		if (ConvenientDefinitions.synthsBuild, {
 			if(name.isNil,{"needs a key aka name, please".throw; ^nil});
 
 			// if folder is unspecified in Convenience.p func
@@ -77,6 +70,7 @@ Convenience {
 				Pbind(
 					\type, type,
 					\fftOnOff, fftOnOff,
+					\pitchShiftOnOff, pitchShiftOnOff,
 					\tuningOnOff, tuningOnOff,
 					\basefreq, basefreq,
 					\out, out,
@@ -100,7 +94,9 @@ Convenience {
 					\decay, decay,
 					\sustain, sustain,
 					\release, release,
-					\binRange, binRange
+					\binRange, binRange,
+					\pitchRatio, pitchRatio,
+					\formantRatio, formantRatio
 				);
 			).play(tempo);
 		}, {
@@ -261,8 +257,8 @@ Convenience {
 		// load synths on/off
 		if (loadSynths == true, {
 			// add synths if not already done
-			if (synthsBuild.not,{
-				this.prAddSynthDefinitions;
+			if (ConvenientDefinitions.synthsBuild.not,{
+				ConvenientDefinitions.addSynths;
 			});
 		});
 
@@ -467,8 +463,8 @@ Convenience {
 	}
 
 	* addSynths {
-		if (synthsBuild.not,{
-			this.prAddSynthDefinitions;
+		if (ConvenientDefinitions.synthsBuild.not,{
+			ConvenientDefinitions.addSynths;
 		});
 	}
 
@@ -558,181 +554,9 @@ Convenience {
 		buffers.clear;
 	}
 
-	*prAddSynthDefinitions {
-		"building synth definitions".postln;
-		/*	  --------------------------------------  */
-		/*	  rate style							 */
-		/*	  ------------------------------------- */
-		SynthDef(\ConvenienceMono, {
-			|
-			bufnum, out = 0, loop = 0, rate = 1, spread = 1, pan = 0, amp = 0.5,
-			attack = 0.01, decay = 0.5, sustain = 0.5, release = 1.0, pos = 0,
-			pattack = 0.0, pdecay = 0.0, psustain = 1.0, prelease = 100.0,
-			// long hack.. when penv is not in use, penv should always be longer than env
-			gate = 1, cutoff = 22e3, bass = 0.0
-			|
-			var sig, key, frames, env, penv, file;
-			penv = EnvGen.ar(Env.adsr(pattack, pdecay, psustain, prelease), gate);
-			frames = BufFrames.kr(bufnum);
-			sig = ConvenienceBufferPlay.ar(
-				1,
-				bufnum,
-				rate*BufRateScale.kr(bufnum)*penv,
-				1,
-				pos*frames,
-				loop: loop
-			);
-			env = EnvGen.ar(Env.adsr(attack, decay, sustain, release), gate);
-			FreeSelf.kr(TDelay.kr(Done.kr(env),0.1));
-			sig = LPF.ar(sig, cutoff);
-			sig = sig + (LPF.ar(sig, 100, bass));
-			sig = Splay.ar(sig, spread: spread, center: pan, level: amp);
-			sig = LeakDC.ar(sig);
-			Out.ar(out, (sig*env));
-		}).add;
-
-		SynthDef(\ConvenienceStereo, {
-			|
-			bufnum, out = 0, loop = 0, rate = 1, spread = 1, pan = 0, amp = 0.5,
-			attack = 0.01, decay = 0.5, sustain = 0.5, release = 1.0, pos = 0,
-			gate = 1, cutoff = 22e3, bass = 0.0
-			|
-			var sig, key, frames, env, file;
-			frames = BufFrames.kr(bufnum);
-			sig = ConvenienceBufferPlay.ar(
-				2,
-				bufnum,
-				rate*BufRateScale.kr(bufnum),
-				1,
-				pos*frames,
-				loop: loop
-			);
-			env = EnvGen.ar(Env.adsr(attack, decay, sustain, release), gate);
-			FreeSelf.kr(TDelay.kr(Done.kr(env),0.1));
-			sig = LPF.ar(sig, cutoff);
-			sig = sig + (LPF.ar(sig, 100, bass));
-			sig = Splay.ar(sig, spread: spread, center: pan, level: amp);
-			sig = LeakDC.ar(sig);
-			Out.ar(out, (sig*env));
-		}).add;
-
-		/*	  --------------------------------------  */
-		/*	  for scaling, assuming samples are tuned */
-		/*	  ------------------------------------- */
-		SynthDef(\ConvenienceMonoScale, {
-			|
-			bufnum, out = 0, loop = 0, spread = 1, pan = 0, amp = 0.5,
-			attack = 0.01, decay = 0.5, sustain = 0.5, release = 1.0, pos = 0,
-			gate = 1, cutoff = 22e3, bass = 0.0, basefreq=440, freq
-			|
-			var sig, rate, frames, env, file;
-			frames = BufFrames.kr(bufnum);
-			rate = freq/basefreq;
-			sig = ConvenienceBufferPlay.ar(
-				1,
-				bufnum,
-				rate*BufRateScale.kr(bufnum),
-				1,
-				pos*frames,
-				loop: loop
-			);
-			env = EnvGen.ar(Env.adsr(attack, decay, sustain, release), gate);
-			FreeSelf.kr(TDelay.kr(Done.kr(env),0.1));
-			sig = LPF.ar(sig, cutoff);
-			sig = sig + (LPF.ar(sig, 100, bass));
-			sig = Splay.ar(sig, spread: spread, center: pan, level: amp);
-			sig = LeakDC.ar(sig);
-			Out.ar(out, (sig*env));
-		}).add;
-
-		SynthDef(\ConvenienceStereoScale, {
-			|
-			bufnum, out = 0, loop = 0, spread = 1, pan = 0, amp = 0.5,
-			attack = 0.01, decay = 0.5, sustain = 0.5, release = 1.0, pos = 0,
-			gate = 1, cutoff = 22e3, bass = 0.0, basefreq=440, freq
-			|
-			var sig, rate, frames, env, file;
-			frames = BufFrames.kr(bufnum);
-			rate = freq/basefreq;
-			sig = ConvenienceBufferPlay.ar(
-				2,
-				bufnum,
-				rate*BufRateScale.kr(bufnum),
-				1,
-				pos*frames,
-				loop: loop
-			);
-			env = EnvGen.ar(Env.adsr(attack, decay, sustain, release), gate);
-			FreeSelf.kr(TDelay.kr(Done.kr(env),0.1));
-			sig = LPF.ar(sig, cutoff);
-			sig = sig + (LPF.ar(sig, 100, bass));
-			sig = Splay.ar(sig, spread: spread, center: pan, level: amp);
-			sig = LeakDC.ar(sig);
-			Out.ar(out, (sig*env));
-		}).add;
-
-		/*	  --------------------------------------  */
-		/*	  bfft filter bins				synth	 */
-		/*	  ------------------------------------- */
-		~frame = 1024;
-		SynthDef(\ConvenienceBufBins, { | bufnum, out = 0, win = 1, loop = 0, spread = 1, pan = 0, amp = 0.5,
-			binRange =#[0, 512], gate = 1, attack = 0.01, decay = 0.01, sustain = 2,
-			release = 0.01, pos = 0, rate = 1 |
-			var in, chain, env, frames, sig;
-			frames = BufFrames.kr(bufnum);
-			env = EnvGen.ar(Env.adsr(attack, decay, sustain, release), gate, doneAction: 2);
-			in = PlayBuf.ar(1, bufnum, rate * BufRateScale.kr(bufnum), startPos: pos * frames, loop: loop);
-			chain = FFT(LocalBuf(~frame), in);
-			chain = chain.pvcollect(~frame, {| mag, phase, index |
-				if(index >= binRange[0], if(index <= binRange[1], mag, 0), 0);
-			}, frombin: 0, tobin: (~frame / 2) - 1, zeroothers: 0);
-			sig = IFFT(chain, win) * amp * env;
-			sig = Splay.ar(sig, spread: spread, center: pan, level: amp);
-			sig = LeakDC.ar(sig);
-			Out.ar(out, sig);
-		}).add;
-
-		SynthDef(\ConvenienceBufBinsScale, { | bufnum, out = 0, win = 1, loop = 0, spread = 1, pan = 0, amp = 0.5,
-			binRange =#[0, 512], gate = 1, attack = 0.01, decay = 0.01, sustain = 2,
-			release = 0.01, pos = 0, basefreq=440, freq |
-			var in, chain, env, frames, rate, sig;
-			frames = BufFrames.kr(bufnum);
-			rate = freq/basefreq;
-			env = EnvGen.ar(Env.adsr(attack, decay, sustain, release), gate, doneAction: 2);
-			in = PlayBuf.ar(1, bufnum, rate * BufRateScale.kr(bufnum), startPos: pos * frames, loop: 0);
-			chain = FFT(LocalBuf(~frame), in);
-			chain = chain.pvcollect(~frame, {| mag, phase, index |
-				if(index >= binRange[0], if(index <= binRange[1], mag, 0), 0);
-			}, frombin: 0, tobin: (~frame / 2) - 1, zeroothers: 0);
-			sig = IFFT(chain, win) * amp * env;
-			sig = Splay.ar(sig, spread: spread, center: pan, level: amp);
-			sig = LeakDC.ar(sig);
-			Out.ar(out, sig);
-		}).add;
-
-		/*	  --------------------------------------  */
-		/*	  bfft filter bins input		synth	 */
-		/*	  ------------------------------------- */
-		/*SynthDef(\ConvenienceInBins, { | out = 0, in = 0, win = 1, amp = 0.5,
-		binRange =#[0, 512], gate = 1, attack = 0.01, decay = 0.01, sustain = 2,
-		release = 0.01, rate = 1 |
-		var sig, chain, env;
-		env = EnvGen.ar(Env.adsr(attack, decay, sustain, release), gate, doneAction: 2);
-		sig = SoundIn.ar(in);
-		chain = FFT(LocalBuf(~frame), sig);
-		chain = chain.pvcollect(~frame, {| mag, phase, index |
-		if(index >= binRange[0], if(index <= binRange[1], mag, 0), 0);
-		}, frombin: 0, tobin: (~frame / 2) - 1, zeroothers: 0);
-		Out.ar(out, IFFT(chain, win) * amp * env);
-		}).add;*/
-
-		synthsBuild = true;
-		"Convenience synths build".postln;
-	}
-
 	*prAddEventType {
 		Event.addEventType(\Convenience, {
-			var numChannels, scaling, fft;
+			var numChannels, scaling, fft, pitchshift;
 
 			if (~buf.isNil) {
 				var folder = ~folder;
@@ -740,6 +564,7 @@ Convenience {
 					var index = ~index ? 0;
 					~buf = Convenience.get(folder, index)
 				} {
+					// pair split if folder is nil
 					var sample = ~sample;
 					if (sample.isNil.not) {
 						var pair, folder, index;
@@ -757,17 +582,27 @@ Convenience {
 			if(scaling.isNil) {scaling = 0};
 			fft = ~fftOnOff;
 			if(fft.isNil) {fft = 0};
+			pitchshift = ~pitchShiftOnOff;
+			if(pitchshift.isNil) {pitchshift = 0};
 
 			case
-			{fft == 1 and: scaling == 0} {
+			{fft == 1 and: pitchshift == 0 and: scaling == 0} {
 				~instrument = \ConvenienceBufBins;
 				//"FFT".postln;
 			}
-			{fft == 1 and: scaling == 1} {
+			{fft == 1 and: pitchshift == 0 and: scaling == 1} {
 				~instrument = \ConvenienceBufBinsScale;
 				//"FFT+SCALING".postln;
 			}
-			{scaling == 1 and: fft == 0} {
+			{pitchshift == 1 and: scaling == 0} {
+				~instrument = \ConveniencePitchShift;
+				//"PITCHSHIFT".postln;
+			}
+			{pitchshift == 1 and: scaling == 1} {
+				~instrument = \ConveniencePitchShiftScale;
+				//"PITCHSHIFT+SCALING".postln;
+			}
+			{scaling == 1 and: fft == 0 and: pitchshift == 0} {
 				//"SCALING -- ".post;
 				switch(numChannels,
 					1, {
@@ -809,6 +644,7 @@ Convenience {
 		});
 	}
 
+	// fft method for selecting filter bands
 	// thanks to Bálint Laczkó
 	*buckets {| frame = 1024, numBands = 4, band = 0 |
 		var result, coeff, binLow, binHigh;
@@ -838,69 +674,4 @@ Convenience {
 	}
 
 
-}
-
-
-ConvenienceBufferPlay {
-	// copy of PlayBufCF
-	*ar { arg numChannels, bufnum=0, rate=1.0, trigger=1.0, startPos=0.0, loop = 0.0,
-		lag = 0.1, n = 2; // alternative for safemode
-
-		var index, method = \ar, on;
-
-		switch ( trigger.rate,
-			\audio, {
-				index = Stepper.ar( trigger, 0, 0, n-1 );
-			},
-			\control, {
-				index = Stepper.kr( trigger, 0, 0, n-1 );
-				method = \kr;
-			},
-			\demand, {
-				trigger = TDuty.ar( trigger ); // audio rate precision for demand ugens
-				index = Stepper.ar( trigger, 0, 0, n-1 );
-			},
-			{ ^PlayBuf.ar( numChannels, bufnum, rate, trigger, startPos, loop ); } // bypass
-		);
-
-		on = n.collect({ |i|
-			//on = (index >= i) * (index <= i); // more optimized way?
-			InRange.perform( method, index, i-0.5, i+0.5 );
-		});
-
-		switch ( rate.rate,
-			\demand,  {
-				rate = on.collect({ |on, i|
-					Demand.perform( method, on, 0, rate );
-				});
-			},
-			\control, {
-				rate = on.collect({ |on, i|
-					Gate.kr( rate, on ); // hold rate at crossfade
-				});
-			},
-			\audio, {
-				rate = on.collect({ |on, i|
-					Gate.ar( rate, on );
-				});
-			},
-			{
-				rate = rate.asCollection;
-			}
-		);
-
-		if( startPos.rate == \demand ) {
-			startPos = Demand.perform( method, trigger, 0, startPos )
-		};
-
-		lag = 1/lag.asArray.wrapExtend(2);
-
-		^Mix(
-			on.collect({ |on, i|
-				PlayBuf.ar( numChannels, bufnum, rate.wrapAt(i), on, startPos, loop )
-				* Slew.perform( method, on, lag[0], lag[1] ).sqrt
-			})
-		);
-
-	}
 }
