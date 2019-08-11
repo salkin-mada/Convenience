@@ -40,7 +40,7 @@ Opens a window where you can drag and drop folders + control "loading depth" i.e
 
 `Convenience.crawl(path, depth)`
 
-start crawling immedeately from given path into its tree
+start crawling immediately from given path into its tree
 
 Both creates a dict of `Buffer`'s loaded with the audio files from the folders found in the given directory tree (path).
 
@@ -75,17 +75,17 @@ z.s(\lay); // stop
 
 // play
 (
-z.p(\lay,
-	tempo: 8.0,
-	out: 0,  // all Convenience synths outputs stereo, 2 channels
-    folder: \sounds,
-	index: Prand([1,2,3], inf),
-	pos: Pwhite(0.2,0.7),
-	dur: Pseq([1,3,Rest(2),2], inf),
-	rate: Pwhite(0.9,1.0) * Pstep([0.4,0.9,0.2], Prand([3,5,8], inf), inf),
-	pan: Pwhite(-0.65,0.65),
-	amp: 0.4
-);
+    z.p(\lay,
+	    tempo: 8.0,
+	    out: 0,  // all Convenience synths outputs stereo, 2 channels
+        folder: \sounds,
+	    index: Prand([1,2,3], inf),
+	    pos: Pwhite(0.2,0.7),
+	    dur: Pseq([1,3,Rest(2),2], inf),
+	    rate: Pwhite(0.9,1.0) * Pstep([0.4,0.9,0.2], Prand([3,5,8], inf), inf),
+	    pan: Pwhite(-0.65,0.65),
+	    amp: 0.4
+    );
 )
 
 // slay
