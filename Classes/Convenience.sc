@@ -284,10 +284,9 @@ Convenience {
 
 		// count init depth
 		PathName(initpath).pathOnly.do{ | char |
-			// here we should have a guard func that removes the last slash in initpath
-			// if it was given aka ~/Desktop/soundFiles/
-			// instead of ~/Desktop/soundFiles ie. ending with a slash
-			// breaks the depth control math/iteration
+			// here we should have a guard func that removes the last slash in initpath if it was given
+			// aka ~/Desktop/soundFiles instead of ~/Desktop/soundFiles
+			// for now if user writes a path that ends with "/" this breaks the depth control math/iteration
 			if (char == $/, {initPathDepthCount = initPathDepthCount + 1;})
 		};
 		//"initPathDepthCount: %".format(initPathDepthCount).postln;
