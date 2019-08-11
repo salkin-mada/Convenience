@@ -43,7 +43,13 @@ Convenience.p(\lan,
 // stop
 Convenience.s(\lay); Convenience.s(\lot); Convenience.s(\lan);
 
-// more
+//Use Convenience just as a Buffer Class
+play{PlayBuf.ar(1, Convenience.get(\sounds, 1), 0.41)}
+
+// free a random folder
+Convenience.free(Convenience.randomFolder)
+
+// more sequencing examples
 // dependency Else  --> Quarks.install("https://github.com/madskjeldgaard/Else")
 (
 Convenience.p(\lay,
@@ -66,7 +72,7 @@ Convenience.p(\lay,
 )
 Convenience.s(\lay)
 
-// all functionality example
+// extended functionality example
 // play
 (
 Convenience.p(\lay,
@@ -96,6 +102,30 @@ Convenience.p(\lay,
 Convenience.s(\lay)
 
 
+// pitchshift
+// small note, for now pitchShiftOnOff rules over fftOnOff
+(
+z.p(\ps,
+	tempo: 145/60*4,
+	tuningOnOff: 1,
+	degree: Pseq([1,4,6,9], inf),
+	octave: Pseq([5,6,7], inf),
+	pitchShiftOnOff: 1,
+	pitchRatio: Pwhite(0.2,0.5),
+	formantRatio: Pwhite(0.8,5.2),
+	folder: z.randomFolder.postln;,
+	index: Pwhite(1,100).floor,
+	cutoff: Psrp(0.01623).linexp(-1.0,1.0,100,1e3),
+	pos: Pwhite(0.2,0.7),
+	dur: Pseq([1,1,1,1,1,1,Rest(3),1,1,1,Rest(5)], inf),
+	rate: Pwhite(0.9,1.0) * Pstep([0.4,0.9,0.2], Prand([3,5,8], inf), inf)+3,
+	pan: Pwhite(-0.65,0.65),
+	amp: 0.4,
+	release: 7.0
+);
+)
+
+z.s(\ps);
 
 
 
@@ -114,6 +144,21 @@ Convenience.s(\lay)
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// personal different things tester
 ////////////////////////////////////////////////////
 Convenience.randomFolder
 ZzzZzZzzzZzz.randomFolder
@@ -125,7 +170,7 @@ Convenience.size
 Convenience.folders
 Convenience.folders.size
 Convenience.folders.do{|item| item.postln}
-Convenience.free(Convenience.randomFolder)
+
 Convenience.free(\bats)
 Convenience.free(\hurlumhej)
 Convenience.free(\kirke_orgel)
@@ -180,4 +225,3 @@ Convenience.buffers
 Convenience.get(\tg500_fx, 2).path
 Convenience.get(\test, 4)
 
-play{PlayBuf.ar(1, Convenience.get(\test, 4), 0.01)}

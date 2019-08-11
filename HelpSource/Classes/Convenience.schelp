@@ -97,7 +97,31 @@ z.p(\lay,
     pan: Pwhite(-0.65,0.65),
     amp: 0.4
 );
-
 // slay
 z.s(\lay)
+
+// pitchshift
+(
+z.p(\ps,
+	tempo: 145/60*4,
+	tuningOnOff: 1,
+	degree: Pseq([1,4,6,9], inf),
+	octave: Pseq([5,6,7], inf),
+	pitchShiftOnOff: 1,
+	pitchRatio: Pwhite(0.2,0.5),
+	formantRatio: Pwhite(0.8,5.2),
+	folder: z.randomFolder.postln;,
+	index: Pwhite(1,100).floor,
+	cutoff: Psrp(0.01623).linexp(-1.0,1.0,100,1e3),
+	pos: Pwhite(0.2,0.7),
+	dur: Pseq([1,1,1,1,1,1,Rest(3),1,1,1,Rest(5)], inf),
+	rate: Pwhite(0.9,1.0) * Pstep([0.4,0.9,0.2], Prand([3,5,8], inf), inf)+3,
+	pan: Pwhite(-0.65,0.65),
+	amp: 0.4,
+	release: 7.0
+);
+)
+
+z.s(\ps);
+
 ::
