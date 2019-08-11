@@ -39,8 +39,16 @@ Convenience {
 			if (folder.isNil, {
 				if(Convenience.folders.asArray[0].isNil.not, {
 					folder = Convenience.folders.asArray[0];
-					"choosing first bufferGroup".postln;
-				}, {Error("not init corr no folder avai").throw; ^nil})
+					//"choosing first bufferGroup".postln;
+				}, {Error("Conveience:: no buffers available").throw; ^nil})
+			});
+			// if queried folder does not exist
+			if (Convenience.buffers.includesKey(folder).not, {
+				"cant find queried folder: %".format(folder).postln;
+				if(Convenience.folders.asArray[0].isNil.not, {
+					folder = Convenience.folders.asArray[0];
+					"replacing with: %".format(folder).postln;
+				}, {Error("Conveience:: no buffers available").throw; ^nil})
 			});
 
 			// if scale is not set choose classic chromatic
@@ -48,20 +56,19 @@ Convenience {
 				scale = Scale.chromatic;
 			});
 
-			"tempo pre ****** %".format(tempo.class).postln;
-
+			// decide what clock to use
 			// check if Utopia is in Class library
 			if ( Main.packages.asDict.includesKey(\Utopia) == true, {
-				"\n\tConvenience:: Utopia is possible\n".postln;
+				//"\n\tConvenience:: Utopia is possible\n".postln;
 				if (tempo.class == BeaconClock, {
 					// great do nothing
-					"\ttempo is BeaconClock controlled".postln
+					//"\ttempo is BeaconClock controlled".postln
 				}, {
 					tempo = TempoClock(tempo);
-					"\tusing tempoclock".postln;
+					//"\tusing tempoclock".postln;
 				})
 			}, {
-				"Convenience suggests to install Utopia Quark".postln;
+				"\tConvenience:: suggests to install Utopia Quark".postln;
 				tempo = TempoClock(tempo);
 			});
 
@@ -74,16 +81,6 @@ Convenience {
 					\basefreq, basefreq,
 					\out, out,
 					\folder, folder,
-					// \folder, Pfunc({ | folder |
-					// 	// id called folder does not exist, choose an existing one
-					// 	if (Convenience.buffers.includesKey(folder).not, {
-					// 		"cant find queried folder: %".format(folder).postln;
-					// 		if(Convenience.folders.asArray[0].isNil.not, {
-					// 		folder = Convenience.folders.asArray[0];
-					// 		"replacing with: %".format(folder).postln;
-					// 		}, {Error("not init corr no folder avai").throw; ^nil})
-					// 	});
-					// }),
 					\index, index,
 					\dur, dur,
 					\stretch, stretch,
@@ -107,7 +104,7 @@ Convenience {
 				);
 			).play(tempo);
 		}, {
-			"Convenience::synths not added".postln;
+			"Convenience:: synths not added".postln;
 		});
 	}
 
@@ -367,9 +364,10 @@ Convenience {
 			// update folderPaths to be even with loaded buffers
 			folderPaths.keysDo{ | key |
 				//key.postln;
+				// clean up folderPath dir after loading
 				if(buffers.includesKey(key).not,{
 					folderPaths.removeAt(key);
-					"removed % from folderPaths".format(key).postln;
+					//"removed % from folderPaths".format(key).postln;
 				}
 			)};
 
@@ -412,14 +410,14 @@ Convenience {
 			// add loadedBuffers to dictionary with key from common folder
 			if (loadedBuffers.isEmpty.not, {
 				if (buffers.includesKey(folderKey).not, {
-					"added new folder: % as key %".format(folder.folderName,folderKey).postln;
+					"added new folder as key: %".format(folderKey).postln;
 					//  add and remove spaces in folder name
 					buffers.add(folderKey -> loadedBuffers);
 				})
 			}, {
-				"no soundfiles in : %, skipped".format(folder.folderName).postln;
+				//"no soundfiles in : %, skipped".format(folder.folderName).postln;
 				// update folderPaths
-				//folderPaths.removeAt(folderKey);
+				// folderPaths.removeAt(folderKey);
 			});
 		}, {"folder % already loaded".format(folderKey).postln});
 	}
