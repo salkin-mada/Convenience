@@ -473,13 +473,35 @@ Convenience {
 	}
 
 	*get { | folder, index |
-		if (buffers.isNil.not) {
-			var bufferGroup = buffers[folder.asSymbol];
-			if (bufferGroup.isNil.not) {
+		if (buffers.isNil.not, {
+
+			var bufferGroup;
+
+			// if folder is unspecified
+			if (folder.isNil, {
+				if(Convenience.folders.asArray[0].isNil.not, {
+					folder = Convenience.folders.asArray[0];
+				}, {Error("Conveience:: no buffers available :: 2").throw; ^nil})
+			});
+			// if queried folder does not exist
+			if (Convenience.buffers.includesKey(folder).not, {
+				"cant find queried folder: %".format(folder).postln;
+				if(Convenience.folders.asArray[0].isNil.not, {
+					folder = Convenience.folders.asArray[0];
+					"replacing with: %".format(folder).postln;
+				}, {Error("Conveience:: no buffers available :: 3").throw; ^nil})
+			});
+
+			bufferGroup = buffers[folder.asSymbol];
+
+			// get buffer for user
+			if (bufferGroup.isNil.not, {
 				index = index % bufferGroup.size;
 				^bufferGroup[index]
-			}
-		};
+			});
+		}, {
+			Error("Conveience:: no buffers available :: 1").throw;
+		});
 		^nil
 	}
 
@@ -491,8 +513,8 @@ Convenience {
 		^this.buffers.values.collect{|i|i.size}.sum
 	}
 
-	// only think i integers
-	*folderNum { |index|
+	// only think in integers
+	*folderNum { | index |
 		var folder;
 
 		if (buffers.isNil.not) {
