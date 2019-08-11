@@ -59,6 +59,8 @@ Returns the `Buffer` of file at index in chosen folder - if queried index is to 
 ## Example
 
 ```
+s.boot;
+
 z = Convenience;
 
 /* crawler loads folders in its way */
@@ -74,7 +76,6 @@ z.p(\lay); // play at the beginning of first file in first folder
 z.s(\lay); // stop
 
 // play
-(
 z.p(\lay,
 	tempo: 8.0,
     folder: \sounds,
@@ -85,11 +86,10 @@ z.p(\lay,
     pan: Pwhite(-0.65,0.65),
     amp: 0.4
 );
-)
 
 // slay
 z.s(\lay)
 ```
 Convenience.p outputs stereo, 2 channels, but can be sequenced to whatever output pair you like.
-for more info `.p` arguments check the `usage.scd` in /Convenience/Usage
+For more info about `.p` arguments check the `convenience_guide.scd` in /Convenience/usage or simply check the helpfile, `ctrl+d` / `cmd+d` depending on your OS.
 
