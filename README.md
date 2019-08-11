@@ -75,21 +75,21 @@ z.s(\lay); // stop
 
 // play
 (
-    z.p(\lay,
-	    tempo: 8.0,
-	    out: 0,  // all Convenience synths outputs stereo, 2 channels
-        folder: \sounds,
-	    index: Prand([1,2,3], inf),
-	    pos: Pwhite(0.2,0.7),
-	    dur: Pseq([1,3,Rest(2),2], inf),
-	    rate: Pwhite(0.9,1.0) * Pstep([0.4,0.9,0.2], Prand([3,5,8], inf), inf),
-	    pan: Pwhite(-0.65,0.65),
-	    amp: 0.4
-    );
+z.p(\lay,
+	tempo: 8.0,
+    folder: \sounds,
+    index: Prand([1,2,3], inf),
+    pos: Pwhite(0.2,0.7),
+    dur: Pseq([1,3,Rest(2),2], inf),
+    rate: Pwhite(0.9,1.0) * Pstep([0.4,0.9,0.2], Prand([3,5,8], inf), inf),
+    pan: Pwhite(-0.65,0.65),
+    amp: 0.4
+);
 )
 
 // slay
 z.s(\lay)
 ```
-for more info check the `usage.scd` in /Convenience/Usage
+Convenience.p outputs stereo, 2 channels, but can be sequenced to whatever output pair you like.
+for more info `.p` arguments check the `usage.scd` in /Convenience/Usage
 
