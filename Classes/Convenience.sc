@@ -36,13 +36,13 @@ Convenience {
 				}, {Error("Conveience:: no buffers available").throw; ^nil})
 			});
 			// if queried folder does not exist
-			if (Convenience.buffers.includesKey(folder).not, {
-				"cant find queried folder: %".format(folder).postln;
-				if(Convenience.folders.asArray[0].isNil.not, {
-					folder = Convenience.folders.asArray[0];
-					"replacing with: %".format(folder).postln;
-				}, {Error("Conveience:: no buffers available").throw; ^nil})
-			});
+			// if (Convenience.buffers.includesKey(folder).not, {
+			// 	"cant find queried folder: %".format(folder).postln;
+			// 	if(Convenience.folders.asArray[0].isNil.not, {
+			// 		folder = Convenience.folders.asArray[0];
+			// 		"replacing with: %".format(folder).postln;
+			// 	}, {Error("Conveience:: no buffers available").throw; ^nil})
+			// });
 
 			// if scale is not set choose classic chromatic
 			if(scale.isNil, {
