@@ -16,7 +16,8 @@ CLASSMETHODS::
 
 METHOD:: crawl
 
-crawler loads folders of files for you
+crawler loads folders of files for you.
+(all buffers created is mono)
 
 METHOD:: p
 

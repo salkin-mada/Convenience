@@ -42,7 +42,7 @@ Opens a window where you can drag and drop folders + control "loading depth" i.e
 
 start crawling immediately from given path into its tree
 
-Both creates a dict of `Buffer`'s loaded with the audio files from the folders found in the given directory tree (path).
+Both creates a dict of `Buffer`'s loaded with the audio files from the folders found in the given directory tree (path). (please note that for now Convenience only loads mono buffers)
 
 Each folder's contents are accessible as an array of buffers at a dict key based on the folder name formatted into a usable key (name/group id).
 
