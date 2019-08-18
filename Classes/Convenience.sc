@@ -312,16 +312,7 @@ Convenience {
 
 			if (loadFolderFlag == true, {
 				var folderKey;
-				folderKey = item.folderName
-				.replace(($ ),"_")
-				.replace(($-),"_")
-				.replace(($,),"")
-				.replace(($+),"")
-				.replace("æ","ae")
-				.replace("ø","o")
-				.replace("å","aa")
-				.asSymbol;
-				//folderKey = item.folderName.replace(($ ),"_").replace(($-),"_").replace(($,),"").replace(($+),"").asSymbol;
+				folderKey = this.prKeyify(item.folderName);
 				// add to folderPaths if not already present
 				if (folderPaths.includesKey(folderKey).not, {
 					folderPaths.add(folderKey -> item.pathOnly.asSymbol);
@@ -376,16 +367,7 @@ Convenience {
 	*load { | path, server |
 		var folder = PathName(path);
 		var files, loadedBuffers, folderKey;
-		folderKey = folder.folderName
-		.replace(($ ),"_")
-		.replace(($-),"_")
-		.replace(($,),"")
-		.replace(($+),"")
-		.replace("æ","ae")
-		.replace("ø","o")
-		.replace("å","aa")
-		.asSymbol;
-		//folderKey = folder.folderName.replace(($ ),"_").replace(($-),"_").replace(($,),"").asSymbol;
+		folderKey = this.prKeyify(folder.folderName);
 
 		server = server ? Server.default;
 
@@ -557,6 +539,20 @@ Convenience {
 			}
 		};
 		buffers.clear;
+	}
+
+	*prKeyify { | input |
+		var result;
+		result = input
+		.replace(($ ),"_")
+		.replace(($-),"_")
+		.replace(($,),"")
+		.replace(($+),"")
+		.replace("æ","ae")
+		.replace("ø","o")
+		.replace("å","aa")
+		.asSymbol;
+		^result
 	}
 
 	*prAddEventType {
