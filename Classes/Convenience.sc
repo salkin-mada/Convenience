@@ -317,9 +317,9 @@ Convenience {
 				.replace(($-),"_")
 				.replace(($,),"")
 				.replace(($+),"")
-				/*		.replace(($æ),"ae")
-				.replace(($ø),"o")
-				.replace(($å),"aa")*/
+				.replace("æ","ae")
+				.replace("ø","o")
+				.replace("å","aa")
 				.asSymbol;
 				//folderKey = item.folderName.replace(($ ),"_").replace(($-),"_").replace(($,),"").replace(($+),"").asSymbol;
 				// add to folderPaths if not already present
@@ -381,9 +381,9 @@ Convenience {
 		.replace(($-),"_")
 		.replace(($,),"")
 		.replace(($+),"")
-		/*		.replace(($æ),"ae")
-		.replace(($ø),"o")
-		.replace(($å),"aa")*/
+		.replace("æ","ae")
+		.replace("ø","o")
+		.replace("å","aa")
 		.asSymbol;
 		//folderKey = folder.folderName.replace(($ ),"_").replace(($-),"_").replace(($,),"").asSymbol;
 
