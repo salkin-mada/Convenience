@@ -1,7 +1,7 @@
 Convenience {
 	classvar <dir, <buffers, <folderPaths;
 	classvar loadFn;
-	
+
 	// config begin
 	classvar loadSynths = true;
 	// config end
@@ -29,20 +29,23 @@ Convenience {
 			if(name.isNil,{"needs a key aka name, please".throw; ^nil});
 
 			// if folder is unspecified in Convenience.p func
-			if (folder.isNil, {
+			/*if (folder.isNil, {
 				if(Convenience.folders.asArray[0].isNil.not, {
 					folder = Convenience.folders.asArray[0];
 					//"choosing first bufferGroup".postln;
 				}, {Error("Conveience:: no buffers available").throw; ^nil})
-			});
+			});*/
 			// if queried folder does not exist
-			// if (Convenience.buffers.includesKey(folder).not, {
-			// 	"cant find queried folder: %".format(folder).postln;
-			// 	if(Convenience.folders.asArray[0].isNil.not, {
-			// 		folder = Convenience.folders.asArray[0];
-			// 		"replacing with: %".format(folder).postln;
-			// 	}, {Error("Conveience:: no buffers available").throw; ^nil})
-			// });
+			// if (folder.isKindOf(Pattern).not, { // <-- not good, should be dynamic dispatched?
+			// 	// polymorphic.. feelings.
+			// 	if (Convenience.buffers.includesKey(folder).not, {
+			// 		"cant find queried folder: %".format(folder).postln;
+			// 		if(Convenience.folders.asArray[0].isNil.not, {
+			// 			folder = Convenience.folders.asArray[0];
+			// 			"replacing with: %".format(folder).postln;
+			// 		}, {Error("Conveience:: no buffers available").throw; ^nil})
+			// 	})
+			// }, { /*folder received a pattern*/ });
 
 			// if scale is not set choose classic chromatic
 			if(scale.isNil, {
@@ -481,22 +484,24 @@ Convenience {
 			});
 			// if queried folder does not exist
 			if (Convenience.buffers.includesKey(folder).not, {
-				"cant find queried folder: %".format(folder).postln;
+				"*get:: cant find queried folder: %".format(folder).postln;
 				if(Convenience.folders.asArray[0].isNil.not, {
 					folder = Convenience.folders.asArray[0];
-					"replacing with: %".format(folder).postln;
-				}, {Error("Conveience:: no buffers available :: 3").throw; ^nil})
+					"*get::replacing with: %".format(folder).postln;
+				}, {Error("Conveience::*get:: no buffers available :: 3").throw; ^nil})
 			});
 
 			bufferGroup = buffers[folder.asSymbol];
 
-			// get buffer for user
+			// if index is unspecified
+			if (index.isNil, {index = 0});
+			// always get a buffer for user
 			if (bufferGroup.isNil.not, {
 				index = index % bufferGroup.size;
 				^bufferGroup[index]
 			});
 		}, {
-			Error("Conveience:: no buffers available :: 1").throw;
+			Error("Conveience::*get:: no buffers available :: 1").throw;
 		});
 		^nil
 	}
