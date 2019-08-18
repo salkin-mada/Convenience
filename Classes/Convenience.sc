@@ -29,12 +29,14 @@ Convenience {
 			if(name.isNil,{"needs a key aka name, please".throw; ^nil});
 
 			// if folder is unspecified in Convenience.p func
-			/*if (folder.isNil, {
+			// for some reason .p does not work with eventType and going to .get
+			// if this is not here
+			if (folder.isNil, {
 				if(Convenience.folders.asArray[0].isNil.not, {
 					folder = Convenience.folders.asArray[0];
 					//"choosing first bufferGroup".postln;
 				}, {Error("Conveience:: no buffers available").throw; ^nil})
-			});*/
+			});
 			// if queried folder does not exist
 			// if (folder.isKindOf(Pattern).not, { // <-- not good, should be dynamic dispatched?
 			// 	// polymorphic.. feelings.
@@ -118,137 +120,7 @@ Convenience {
 
 		// if no path is specified open crawl drag'n drop window
 		if (initpath.isNil, {
-			var cond = Condition(false);
-			var win, sink, sinkColor, depthSetter;
-			var crawlerWindowStayOpen = false;
-
-			win = Window.new("ZzZzzzZZ.crawl"/*, resizable: false*/)
-			.background_(Color.white)
-			.alwaysOnTop_(true)
-			.front;
-			win.setInnerExtent(260,310);
-
-			StaticText(win, Rect(20, 10, 220, 25)).align_(\center)
-			.stringColor_(Color.green)
-			.background_(Color.black)
-			.string_(" choose init path for crawler ")
-			.font_(Font(size:16));
-
-			Button(win, Rect(15,35,230,25))
-			.states_([
-				["closing when done", Color.white, Color.blue],
-				["staying open", Color.black, Color.magenta]
-			])
-			.font_(Font(size:14))
-			.action_({ | state |
-				crawlerWindowStayOpen = state.value.asBoolean;
-				//"state value: ".post;
-				//state.value.asBoolean.postln;
-			});
-
-			// receive path
-			sink = DragSink(win, Rect(10, 60, 240, 240)).align_(\center);
-			sinkColor = Color.white;
-			sink.string = "drop folder here and init crawl";
-			sink.stringColor_(Color.blue(1.0));
-			sink.background_(sinkColor)
-			.font_(Font(size:12));
-
-
-			StaticText(win,Rect(70, 70, 130, 30)).string_("set depth ->");
-			depthSetter = TextField(win, Rect(165, 70, 40, 30)).align_(\center);
-			depthSetter.string_(depth);
-			depthSetter.background_(Color.blue(alpha:0));
-			depthSetter.action_{ | str |
-				var integerGuard = true;
-				str.value.do{ | char | if (char.digit > 9,{integerGuard = false})};
-				if (integerGuard, {
-					depth = str.value.asInteger;
-					{ // Routine GREEN
-						2.do{
-							var col = 0;
-							256.do{
-								depthSetter.background_(Color.new255(0,col,0,col.linlin(0,255,255,0)));
-								sink.background_(Color.new255(0,col.linlin(0,255,255,100),0,col));
-								col = col + 1;
-								0.001.wait;
-							};
-						};
-						// back to normal
-						sink.background_(sinkColor);
-					}.fork(AppClock)
-				}, {
-					"please set depth with an integer".postln;
-					{ // Routine RED
-						2.do{
-							var col = 0;
-							256.do{
-								depthSetter.background_(Color.new255(col,0,0,col.linlin(0,255,255,0)));
-								sink.background_(Color.new255(col.linlin(0,255,255,0),0,0,col));
-								col = col + 1;
-								0.001.wait;
-							};
-						};
-						// back to normal
-						sink.background_(sinkColor);
-					}.fork(AppClock)
-				});
-				//"loading depth is: %".format(integer.value).postln;
-			};
-
-			sink.receiveDragHandler = {
-				sink.object = View.currentDrag.value;
-				initpath = sink.object.value;
-				//"initpath set from crawl gui: %".format(initpath).postln;
-
-				// gui feedback for humans begin
-				sink.string = "good choice!";
-				sink.background_(Color.green);
-
-				{// Routine for Condition trigger and feedback
-					0.4.wait;
-
-					// do real work behind sillyness
-					cond.test = true;
-					cond.signal;
-
-					sink.background_(Color.yellow);
-					sink.stringColor_(Color.black);
-					sink.string = "crawling around";
-					5.do{
-						5.do{
-							0.02.wait;
-							sink.string = sink.string+".";
-						};
-						sink.string = "crawling around";
-						0.05.wait;
-					};
-					sink.stringColor_(Color.green);
-					sink.string = "done crawling";
-					//"\nother routine autoClose bool is %\n".format(crawlerWindowStayOpen).postln;
-					if (crawlerWindowStayOpen == true, {
-						2.0.wait;
-						// reset, ready for more
-						sink.string = "drop folder here and init crawl";
-						sink.stringColor_(Color.blue(1.0));
-						sink.background_(sinkColor);
-					}, {
-						0.4.wait;
-						win.close
-					});
-				}.fork(AppClock);
-				// gui feeback for humans end
-
-				{ // Routine for the wait Condition
-					cond.wait; // wait for dialog
-					"\ncrawl:::going to parser".postln;
-					// go to parser
-					this.prParseFolders(initpath, depth, server);
-					"\ncrawl:::done parsing".postln;
-				}.fork(AppClock)
-
-			}//.fork(AppClock); // routine for hang yield stuff
-
+			ConvenientView.crawlerWindow(depth, server);
 		}, {
 			// NO WINDOW USAGE
 			// initpath was set when crawl method was called
@@ -454,6 +326,9 @@ Convenience {
 	}
 
 	*get { | folder, index |
+		// "*get".postln;
+		// folder.postln;
+		// index.postln;
 	
 		if (buffers.notEmpty, {
 			
@@ -461,6 +336,7 @@ Convenience {
 
 			// if folder is unspecified
 			if (folder.isNil, {
+				//"*get folder is nil".postln;
 				if(Convenience.folders.asArray[0].isNil.not, {
 					folder = Convenience.folders.asArray[0];
 				}, {
@@ -570,25 +446,28 @@ Convenience {
 		Event.addEventType(\Convenience, {
 			var numChannels, scaling, fft, pitchshift;
 
-			if (~buf.isNil) {
+			if (~buffer.isNil) {
 				var folder = ~folder;
-				if (folder.isNil.not) {
-					var index = ~index ? 0;
-					~buf = Convenience.get(folder, index)
-				} {
+				var index = ~index;
+				//if (folder.isNil.not) {
+					//var index = ~index ? 0;
+
+					~buffer = Convenience.get(folder, index)
+				//} {
+
 					// pair split if folder is nil
-					var sample = ~sample;
-					if (sample.isNil.not) {
-						var pair, folder, index;
-						pair = sample.split($:);
-						folder = pair[0].asSymbol;
-						index = if (pair.size == 2) { pair[1].asInt } { 0 };
-						~buf = Convenience.get(folder, index)
-					}
-				}
+					// var sample = ~sample;
+					// if (sample.isNil.not) {
+					// 	var pair, folder, index;
+					// 	pair = sample.split($:);
+					// 	folder = pair[0].asSymbol;
+					// 	index = if (pair.size == 2) { pair[1].asInt } { 0 };
+					// 	~buffer = Convenience.get(folder, index)
+					// }
+				//}
 			};
 
-			numChannels = ~buf.bufnum.numChannels;
+			numChannels = ~buffer.bufnum.numChannels;
 
 			scaling = ~tuningOnOff;
 			if(scaling.isNil) {scaling = 0};
@@ -651,7 +530,7 @@ Convenience {
 			};
 
 			~type = \note;
-			~bufnum = ~buf.bufnum;
+			~bufnum = ~buffer.bufnum;
 			currentEnvironment.play
 		});
 	}
