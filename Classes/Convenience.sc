@@ -454,15 +454,21 @@ Convenience {
 	}
 
 	*get { | folder, index |
-		if (buffers.isNil.not, {
-
+	
+		if (buffers.notEmpty, {
+			
 			var bufferGroup;
 
 			// if folder is unspecified
 			if (folder.isNil, {
 				if(Convenience.folders.asArray[0].isNil.not, {
 					folder = Convenience.folders.asArray[0];
-				}, {Error("Conveience:: no buffers available :: 2").throw; ^nil})
+				}, {
+					Error("Conveience::*get::
+					folder is unspecified, which is okay
+					but *get cant find a folder to use").throw;
+					^nil
+				})
 			});
 			// if queried folder does not exist
 			if (Convenience.buffers.includesKey(folder).not, {
@@ -470,7 +476,12 @@ Convenience {
 				if(Convenience.folders.asArray[0].isNil.not, {
 					folder = Convenience.folders.asArray[0];
 					"*get::replacing with: %".format(folder).postln;
-				}, {Error("Conveience::*get:: no buffers available :: 3").throw; ^nil})
+				}, {
+					Error("Conveience::*get:: 
+					user asking for folder which is not there, 
+					but *get cant find another folder to replace it with").throw;
+					^nil
+				})
 			});
 
 			bufferGroup = buffers[folder.asSymbol];
@@ -483,9 +494,9 @@ Convenience {
 				^bufferGroup[index]
 			});
 		}, {
-			Error("Conveience::*get:: no buffers available :: 1").throw;
+			Error("Conveience::*get:: buffers is empty").throw;
+			^nil
 		});
-		^nil
 	}
 
 	*folders {
