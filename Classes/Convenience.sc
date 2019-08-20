@@ -202,7 +202,7 @@ Convenience {
 		//folderPaths.keysDo{ | item |
 		//"\n\t__prParseFolders__folderPath: %\n".format(item).postln
 		//};
-		if (folderPaths.isEmpty, {Error("\n\n\n\tfolderPaths is EMPTY!\n\n\n\n").throw});
+		if (folderPaths.isEmpty, {"\n\n\n\tno folders is staged to load at server boot!\n\n\n\n".postln});
 
 		// stage work for boot up
 		ServerBoot.add(loadFn, server);
@@ -289,21 +289,29 @@ Convenience {
 			})
 		}, { // free only specified folder
 			if (buffers.includesKey(folder), {
-				buffers.keysValuesDo { | item |
-					if (item == folder, {
-						item.do { | buffer |
-							if (buffer.isNil.not, {
-								buffer.free;
-							})
-						}
-					});
+				buffers.at(folder).do{ | buffer |
+				if (buffer.isNil.not, {
+						//"freeing buffer: %".format(buffer).postln;
+						buffer.free;
+					})
 				};
+				// buffers.keysValuesDo { | item |
+				// 	if (item == folder, {
+				// 		"freeing folder: %".format(item).postln;
+				// 		item.do { | buffer |
+				// 			if (buffer.isNil.not, {
+				// 				"freeing buffer: %".format(buffer).postln;
+				// 				buffer.free;
+				// 			})
+				// 		}
+				// 	});
+				// };
 				buffers.removeAt(folder);
-				"buffers freed and removed".postln;
+				"buffers freed and removed from dict".postln;
 			});
 			if (folderPaths.includesKey(folder), {
 				folderPaths.removeAt(folder);
-				"folder paths removed".postln;
+				"real folder path removed".postln;
 			})
 		});
 	}
@@ -317,6 +325,28 @@ Convenience {
 
 	*prClearFolderPaths {
 		folderPaths.clear
+	}
+
+	*prFreeBuffers {
+		buffers.do { | folders |
+			folders.do { | buffer |
+				if (buffer.isNil.not) {
+					buffer.free
+				}
+			}
+		};
+		buffers.clear;
+	}
+
+	*prFreeFolder { | folder |
+		buffers.do { | folders |
+			folder.do { | buf |
+				if (buf.isNil.not) {
+					buf.free
+				}
+			}
+		};
+		buffers.clear;
 	}
 
 	* addSynths {
@@ -415,17 +445,6 @@ Convenience {
 		^buffers.keysValuesDo { |folderName, buffers|
 			"% [%]".format(folderName, buffers.size).postln
 		}
-	}
-
-	*prFreeBuffers {
-		buffers.do { | folders |
-			folders.do { | buf |
-				if (buf.isNil.not) {
-					buf.free
-				}
-			}
-		};
-		buffers.clear;
 	}
 
 	*prKeyify { | input |
