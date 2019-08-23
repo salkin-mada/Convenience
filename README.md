@@ -30,7 +30,11 @@ It is plain sailing and easy as pie
 
 ## Installation
 
-In SuperCollider, evaluate the following code to install it as a quark: `Quarks.install("https://github.com/salkin-mada/Convenience.git")`
+In SuperCollider, evaluate the following code to install it as a quar: 
+
+```scd
+Quarks.install("https://github.com/salkin-mada/Convenience.git")
+```
 
 ## Usage
 
@@ -61,7 +65,7 @@ This is true for both the `.get` and `.p` method.
 
 ## Example
 
-```
+```scd
 s.boot;
 
 z = Convenience;
