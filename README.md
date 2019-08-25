@@ -1,7 +1,9 @@
 # Convenience
 Convenience is many things but first and foremost it is convenient for me.
 
-But if you like to ease - read on.
+But if you like to **ease** - read on.
+
+![example](images/crawling_trees.png "tree'n crawl")
 
 Convenience is a tool to easily load audio files into easily accessible collections of buffers in Supercollider. 
 
@@ -17,7 +19,7 @@ It is Pattern Class based so you can do your usual pattern grub but with obvious
 
 It can load and remove buffer groups (folders of audio files) while playing.
 
-Convenience is a good friend of fast ram and a lot of it.
+Convenience is a good friend of nvme disks and lots of ram.
 
 This Class is a work in progress. It is unstable. It can change in ways where saved usage of the Class does not function any more.
 
