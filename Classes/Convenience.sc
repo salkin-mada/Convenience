@@ -461,6 +461,17 @@ Convenience {
 		^result
 	}
 
+	*properties {
+		^[
+			"name", "type", "out", "folder", "index", "dur", "stretch",
+			"pos", "loop", "rate", "degree", "octave", "root", "scale",
+			"cutoff", "bass", "pan", "spread", "amp", "attack",
+			"decay", "sustain", "release", "tempo", "tuningOnOff",
+			"pattack", "pdecay", "psustain", "prelease",
+			"basefreq", "fftOnOff", "binRange", "pitchShiftOnOff", "pitchRatio", "formantRatio"
+		]
+	}
+
 	*prAddEventType {
 		Event.addEventType(\Convenience, {
 			var numChannels, scaling, fft, pitchshift;
