@@ -1,7 +1,7 @@
 ConvenientView {
 
 	*crawlerWindow{ |depth, server|
-		// user condig
+		// user config
 		var recursiveGuard = true; // redundant, but protects your mem and swap from insane typ 3e4 depth crawling
 		var maxDepth = 99; // guard threshold
 
@@ -108,11 +108,6 @@ ConvenientView {
 			depthSetter.front;
 		});
 
-		// on close bug here somewhere
-		// on close bug here somewhere
-		// on close bug here somewhere
-		// on close bug here somewhere
-		// on close bug here somewhere
 		win.endFrontAction_({
 			if (win.isClosed.not,{
 				win.background_(Color.clear);
@@ -175,9 +170,6 @@ ConvenientView {
 			}
 		};
 		win.refresh;
-
-		win.onClose{"BUUUUUG".postln;};
-
 		
 		// actions
 		depthSetter.action_{ | str |

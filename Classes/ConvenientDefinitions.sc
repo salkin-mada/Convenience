@@ -3,11 +3,30 @@ ConvenientDefinitions {
 
 	*addSynths { | server |
 
+		var win = Window.new("adding synths", Rect(450,450,250,250))
+		.background_(Color.green)
+		.alwaysOnTop_(true)
+		.front;
+		// var buildFeed = Routine({
+		// 	loop{
+		// 		"\n".post;
+		// 		11.do{
+		// 			".".post;
+		// 			0.1.wait;
+		// 		};
+		// 		//0.1.wait;
+		// 	};
+		// });
+
 		"Convenience is talking to %".format(server).postln;
+
+
 
 		{ // fork it
 
 		"building synth definitions".postln;
+		//buildFeed.play;
+
 		/*	  --------------------------------------  */
 		/*	  rate style							 */
 		/*	  ------------------------------------- */
@@ -264,6 +283,9 @@ ConvenientDefinitions {
         }).add;
 
 		server.sync;
+
+		//buildFeed.stop;
+		win.close;
 
         "Convenience synths build".postln;
 

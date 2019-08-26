@@ -1,10 +1,11 @@
 Convenience {
+	// user config
+	// crawler load synths?
+	classvar loadSynths = true;
+
+	// private config
 	classvar <dir, <buffers, <folderPaths;
 	classvar loadFn;
-
-	// config begin
-	classvar loadSynths = true;
-	// config end
 
 	const <supportedExtensions = #[\wav, \wave, \aif, \aiff, \flac];
 
