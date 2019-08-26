@@ -307,11 +307,11 @@ Convenience {
 				// 	});
 				// };
 				buffers.removeAt(folder);
-				"buffers freed and removed from dict".postln;
+				"folder % is freed".format(folder).postln;
 			});
 			if (folderPaths.includesKey(folder), {
 				folderPaths.removeAt(folder);
-				"real folder path removed".postln;
+				//"real folder path removed".postln;
 			})
 		});
 	}
@@ -436,13 +436,14 @@ Convenience {
 	}
 
 	*files {
-		^buffers.do { |folderName, buffers|
-			"% %".format(folderName, buffers.size).postln
+		^buffers.keysValuesDo { |folderName, bufferArray|
+			bufferArray.do{| buffer | "% -> %".format(folderName, buffer).postln
+			}
 		}
 	}
 
 	*list {
-		^buffers.keysValuesDo { |folderName, buffers|
+		buffers.keysValuesDo { |folderName, buffers|
 			"% [%]".format(folderName, buffers.size).postln
 		}
 	}
