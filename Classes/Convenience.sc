@@ -252,8 +252,8 @@ Convenience {
 			// load files into buffers
 			loadedBuffers = files.collect { | file |
 				Buffer.readChannel(server, file.fullPath;, channels: [0]).normalize(0.99);
-				server.sync;
 				"reading first channel from\n\t %".format(file.fileName).postln;
+				server.sync;
 			};
 
 			//"\n\t loadedBuffers from folder: % --> %".format(folder.folderName,loadedBuffers).postln;

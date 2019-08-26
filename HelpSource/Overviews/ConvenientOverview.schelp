@@ -1,0 +1,13 @@
+TITLE:: ConvenientOverview
+SUMMARY:: content and examples to try out
+CATEGORIES:: Convenience
+
+list::
+## link::Quarks/Convenience/usage/convenience_guide.scd::
+::
+
+table::
+## link::Classes/ConvenientDefinitions:: || synth definitions
+## link::Classes/ConvenientView:: || gui and views
+## link::Classes/Buffer::, link::Classes/PlayBuf::, link::Classes/PlayBufCf::, link::Classes/Pdef::, link::Classes/Pbind:: || selection of used classes
+::
