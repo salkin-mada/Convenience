@@ -1,8 +1,32 @@
 ConvenientDefinitions {
     classvar <synthsBuild = false;
 
-	*addSynths {
+	*addSynths { | server |
+
+		var win = Window.new("adding synths", Rect(450,450,250,250))
+		.background_(Color.green)
+		.alwaysOnTop_(true)
+		.front;
+		// var buildFeed = Routine({
+		// 	loop{
+		// 		"\n".post;
+		// 		11.do{
+		// 			".".post;
+		// 			0.1.wait;
+		// 		};
+		// 		//0.1.wait;
+		// 	};
+		// });
+
+		"Convenience is talking to %".format(server).postln;
+
+
+
+		{ // fork it
+
 		"building synth definitions".postln;
+		//buildFeed.play;
+
 		/*	  --------------------------------------  */
 		/*	  rate style							 */
 		/*	  ------------------------------------- */
@@ -33,6 +57,8 @@ ConvenientDefinitions {
 			sig = LeakDC.ar(sig);
 			Out.ar(out, (sig*env));
 		}).add;
+
+		server.sync;
 		
 		SynthDef(\ConvenienceStereo, {
 			|
@@ -58,6 +84,8 @@ ConvenientDefinitions {
 			sig = LeakDC.ar(sig);
 			Out.ar(out, (sig*env));
 		}).add;
+
+		server.sync;
 		
 		/*	  --------------------------------------  */
 		/*	  for scaling, assuming samples are tuned */
@@ -88,6 +116,8 @@ ConvenientDefinitions {
 			Out.ar(out, (sig*env));
 		}).add;
 		
+		server.sync;
+
 		SynthDef(\ConvenienceStereoScale, {
 			|
 			bufnum, out = 0, loop = 0, spread = 1, pan = 0, amp = 0.5,
@@ -114,6 +144,8 @@ ConvenientDefinitions {
 			Out.ar(out, (sig*env));
 		}).add;
 		
+		server.sync;
+
 		/*	  --------------------------------------  */
 		/*	  bfft filter bins				synth	 */
 		/*	  ------------------------------------- */
@@ -134,6 +166,8 @@ ConvenientDefinitions {
 			sig = LeakDC.ar(sig);
 			Out.ar(out, sig);
 		}).add;
+
+		server.sync;
 		
 		SynthDef(\ConvenienceBufBinsScale, { | bufnum, out = 0, win = 1, loop = 0, spread = 1, pan = 0, amp = 0.5,
 			binRange =#[0, 512], gate = 1, attack = 0.01, decay = 0.01, sustain = 2,
@@ -152,6 +186,8 @@ ConvenientDefinitions {
 			sig = LeakDC.ar(sig);
 			Out.ar(out, sig);
 		}).add;
+
+		server.sync;
 		
 		/*	  --------------------------------------  */
 		/*	  bfft filter bins input		synth	 */
@@ -208,6 +244,8 @@ ConvenientDefinitions {
             
         }).add;
 
+		server.sync;
+
         SynthDef(\ConveniencePitchShiftScale, {
             |
 			bufnum, out = 0, loop = 0, spread = 1, pan = 0, amp = 0.5,
@@ -244,10 +282,16 @@ ConvenientDefinitions {
             
         }).add;
 
+		server.sync;
+
+		//buildFeed.stop;
+		win.close;
+
         "Convenience synths build".postln;
 
 		synthsBuild = true;
 		//^synthsBuild;
+		}.fork(AppClock)
 	}
 }
 

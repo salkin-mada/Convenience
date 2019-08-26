@@ -1,7 +1,9 @@
 # Convenience
 Convenience is many things but first and foremost it is convenient for me.
 
-But if you like to ease - read on.
+But if you like to **ease** - read on.
+
+![example](images/crawling_trees.png "tree'n crawl")
 
 Convenience is a tool to easily load audio files into easily accessible collections of buffers in Supercollider. 
 
@@ -17,7 +19,7 @@ It is Pattern Class based so you can do your usual pattern grub but with obvious
 
 It can load and remove buffer groups (folders of audio files) while playing.
 
-Convenience is a good friend of fast ram and a lot of it.
+Convenience is a good friend of nvme disks and lots of ram.
 
 This Class is a work in progress. It is unstable. It can change in ways where saved usage of the Class does not function any more.
 
@@ -30,7 +32,11 @@ It is plain sailing and easy as pie
 
 ## Installation
 
-In SuperCollider, evaluate the following code to install it as a quark: `Quarks.install("https://github.com/salkin-mada/Convenience.git")`
+In SuperCollider, evaluate the following code to install it as a quark: 
+
+```scd
+Quarks.install("https://github.com/salkin-mada/Convenience.git")
+```
 
 ## Usage
 
@@ -51,6 +57,10 @@ Each folder's contents are accessible as an array of buffers at a dict key based
 
 create and start a convenient sequencer, giving it a name is the minimum requirement
 
+`Convenience.properties`
+
+list all arguments available in the .p method
+
 `Convenience.get(folder, index)`
 
 Returns the `Buffer` of file at index in chosen folder - if queried index is to high it will wrap around the size of files in the chosen folder until it finds an existing index. Also if chosen folder does not exist it will default to first one in the dictionary of loaded folders.
@@ -61,7 +71,7 @@ This is true for both the `.get` and `.p` method.
 
 ## Example
 
-```
+```scd
 s.boot;
 
 z = Convenience;

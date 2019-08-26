@@ -1,10 +1,11 @@
 Convenience {
+	// user config
+	// crawler load synths?
+	classvar loadSynths = true;
+
+	// private config
 	classvar <dir, <buffers, <folderPaths;
 	classvar loadFn;
-
-	// config begin
-	classvar loadSynths = true;
-	// config end
 
 	const <supportedExtensions = #[\wav, \wave, \aif, \aiff, \flac];
 
@@ -129,12 +130,9 @@ Convenience {
 			this.prParseFolders(initpath, depth, server)
 		});
 
-		// load synths on/off
+		// crawler load synths user config
 		if (loadSynths == true, {
-			// add synths if not already done
-			if (ConvenientDefinitions.synthsBuild.not,{
-				ConvenientDefinitions.addSynths;
-			});
+			this.addSynths(server);
 		});
 
 	}
@@ -202,7 +200,7 @@ Convenience {
 		//folderPaths.keysDo{ | item |
 		//"\n\t__prParseFolders__folderPath: %\n".format(item).postln
 		//};
-		if (folderPaths.isEmpty, {"\n\n\n\tno folders is staged to load at server boot!\n\n\n\n".postln});
+		if (folderPaths.isEmpty, {"\n\tno folders is staged to load\n".postln});
 
 		// stage work for boot up
 		ServerBoot.add(loadFn, server);
@@ -233,7 +231,7 @@ Convenience {
 				}
 			)};
 
-		}, {Error("no folderPaths ?! possibly init/root path is a file").throw});
+		}, {"crawler did not find any usable files".postln;});
 	}
 
 	*load { | path, server |
@@ -254,6 +252,8 @@ Convenience {
 			// load files into buffers
 			loadedBuffers = files.collect { | file |
 				Buffer.readChannel(server, file.fullPath;, channels: [0]).normalize(0.99);
+				server.sync;
+				"reading first channel from\n\t %".format(file.fileName).postln;
 			};
 
 			//"\n\t loadedBuffers from folder: % --> %".format(folder.folderName,loadedBuffers).postln;
@@ -349,9 +349,9 @@ Convenience {
 		buffers.clear;
 	}
 
-	* addSynths {
+	* addSynths { | server |
 		if (ConvenientDefinitions.synthsBuild.not,{
-			ConvenientDefinitions.addSynths;
+			ConvenientDefinitions.addSynths(server);
 		});
 	}
 
@@ -383,8 +383,8 @@ Convenience {
 					folder = Convenience.folders.asArray[0];
 					"*get::replacing with: %".format(folder).postln;
 				}, {
-					Error("Conveience::*get:: 
-					user asking for folder which is not there, 
+					Error("Convenience::*get:: 
+					user is asking for folder which is not there, 
 					but *get cant find another folder to replace it with").throw;
 					^nil
 				})
@@ -400,7 +400,7 @@ Convenience {
 				^bufferGroup[index]
 			});
 		}, {
-			Error("Conveience::*get:: buffers is empty").throw;
+			Error("Convenience::*get:: buffers is empty").throw;
 			^nil
 		});
 	}
@@ -460,6 +460,17 @@ Convenience {
 		.replace("å","aa")
 		.asSymbol;
 		^result
+	}
+
+	*properties {
+		^[
+			"name", "type", "out", "folder", "index", "dur", "stretch",
+			"pos", "loop", "rate", "degree", "octave", "root", "scale",
+			"cutoff", "bass", "pan", "spread", "amp", "attack",
+			"decay", "sustain", "release", "tempo", "tuningOnOff",
+			"pattack", "pdecay", "psustain", "prelease",
+			"basefreq", "fftOnOff", "binRange", "pitchShiftOnOff", "pitchRatio", "formantRatio"
+		]
 	}
 
 	*prAddEventType {
