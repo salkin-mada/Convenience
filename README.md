@@ -32,7 +32,7 @@ It is plain sailing and easy as pie
 
 ## Installation
 
-In SuperCollider, evaluate the following code to install it as a quar: 
+In SuperCollider, evaluate the following code to install it as a quark: 
 
 ```scd
 Quarks.install("https://github.com/salkin-mada/Convenience.git")
@@ -56,6 +56,10 @@ Each folder's contents are accessible as an array of buffers at a dict key based
 `Convenience.p(\name)`
 
 create and start a convenient sequencer, giving it a name is the minimum requirement
+
+`Convenience.properties`
+
+list all arguments available in the .p method
 
 `Convenience.get(folder, index)`
 
