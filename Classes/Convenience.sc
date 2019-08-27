@@ -450,9 +450,10 @@ Convenience {
 	}
 
 	*list {
-		buffers.keysValuesDo { |folderName, buffers|
-			"% [%]".format(folderName, buffers.size).postln
-		}
+		// buffers.keysValuesDo { |folderName, buffers|
+		// 	"% [%]".format(folderName, buffers.size).postln
+		// };
+		ConvenientView.listWindow(buffers);
 	}
 
 	*prKeyify { | input |
