@@ -206,7 +206,10 @@ Convenience {
 		ServerBoot.add(loadFn, server);
 		// if server is running create rightaway
 		if (server.serverRunning) {
+			{ // do in routine, for s.sync in *load
+			// the routine should be in *load though.
 			this.prPipeFoldersToLoadFunc(server)
+			}.fork(AppClock)
 		};
 	}
 
@@ -241,38 +244,42 @@ Convenience {
 
 		server = server ? Server.default;
 
-		if (buffers.includesKey(folderKey).not, {
+		
+		//{ // routine -> load files into buffers
+			if (buffers.includesKey(folderKey).not, {
 
-			// check header only return item if it is supported
-			files = folder.entries.select { | file |
-				supportedExtensions.includes(file.extension.toLower.asSymbol)
-			};
-			//"files: %".format(files).postln;
+				// check header only return item if it is supported
+				files = folder.entries.select { | file |
+					supportedExtensions.includes(file.extension.toLower.asSymbol)
+				};
+				//"files: %".format(files).postln;
 
-			// load files into buffers
-			loadedBuffers = files.collect { | file |
-				Buffer.readChannel(server, file.fullPath;, channels: [0]).normalize(0.99);
-				"reading first channel from\n\t %".format(file.fileName).postln;
-				server.sync;
-			};
+					loadedBuffers = files.collect { | file |
+					server.sync;
+					"reading first channel from\n\t %".format(file.fileName).postln;
+					Buffer.readChannel(server, file.fullPath;, channels: [0]).normalize(0.99);	
+				};	
+				
+				
 
-			//"\n\t loadedBuffers from folder: % --> %".format(folder.folderName,loadedBuffers).postln;
-			//server.sync; // danger danger only working when used before boot use update here instead?
-			//"loading into memory, hang on".postln;
+				//"\n\t loadedBuffers from folder: % --> %".format(folder.folderName,loadedBuffers).postln;
+				//server.sync; // danger danger only working when used before boot use update here instead?
+				//"loading into memory, hang on".postln;
 
-			// add loadedBuffers to dictionary with key from common folder
-			if (loadedBuffers.isEmpty.not, {
-				if (buffers.includesKey(folderKey).not, {
-					"added new folder as key: %".format(folderKey).postln;
-					//  add and remove spaces in folder name
-					buffers.add(folderKey -> loadedBuffers);
-				})
-			}, {
-				//"no soundfiles in : %, skipped".format(folder.folderName).postln;
-				// update folderPaths
-				// folderPaths.removeAt(folderKey);
-			});
-		}, {"folder % already loaded".format(folderKey).postln});
+				// add loadedBuffers to dictionary with key from common folder
+				if (loadedBuffers.isEmpty.not, {
+					if (buffers.includesKey(folderKey).not, {
+						"added new folder as key: %".format(folderKey).postln;
+						//  add and remove spaces in folder name
+						buffers.add(folderKey -> loadedBuffers);
+					})
+				}, {
+					//"no soundfiles in : %, skipped".format(folder.folderName).postln;
+					// update folderPaths
+					// folderPaths.removeAt(folderKey);
+				});
+			},{"folder % already loaded".format(folderKey).postln});
+		//}.fork{AppClock};
 	}
 
 	*free { | folder, server |
@@ -350,7 +357,7 @@ Convenience {
 	}
 
 	* addSynths { | server |
-		if (ConvenientDefinitions.synthsBuild.not,{
+		if (ConvenientDefinitions.synthsBuild.asBoolean.not,{
 			ConvenientDefinitions.addSynths(server);
 		});
 	}

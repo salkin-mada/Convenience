@@ -1,297 +1,303 @@
 ConvenientDefinitions {
     classvar <synthsBuild = false;
+	classvar <addingSynths = false;
 
 	*addSynths { | server |
 
-		var win = Window.new("adding synths", Rect(450,450,250,250))
-		.background_(Color.green)
-		.alwaysOnTop_(true)
-		.front;
-		// var buildFeed = Routine({
-		// 	loop{
-		// 		"\n".post;
-		// 		11.do{
-		// 			".".post;
-		// 			0.1.wait;
-		// 		};
-		// 		//0.1.wait;
-		// 	};
-		// });
+		if (addingSynths.asBoolean.not,{
+		addingSynths = true;
 
-		"Convenience is talking to %".format(server).postln;
+		server.doWhenBooted{
+			var win = Window.new("adding synths", Rect(450,450,250,250))
+			.background_(Color.green)
+			.alwaysOnTop_(true)
+			.front;
+			// var buildFeed = Routine({
+			// 	loop{
+			// 		"\n".post;
+			// 		11.do{
+			// 			".".post;
+			// 			0.1.wait;
+			// 		};
+			// 		//0.1.wait;
+			// 	};
+			// });
 
+			"Convenience is talking to %".format(server).postln;
 
+				{ // fork it
+				"building synth definitions".postln;
+				//buildFeed.play;
 
-		{ // fork it
+				/*	  --------------------------------------  */
+				/*	  rate style							 */
+				/*	  ------------------------------------- */
+				SynthDef(\ConvenienceMono, {
+					|
+					bufnum, out = 0, loop = 0, rate = 1, spread = 1, pan = 0, amp = 0.5,
+					attack = 0.01, decay = 0.5, sustain = 0.5, release = 1.0, pos = 0,
+					pattack = 0.0, pdecay = 0.0, psustain = 1.0, prelease = 100.0,
+					// long hack.. when penv is not in use, penv should always be longer than env
+					gate = 1, cutoff = 22e3, bass = 0.0
+					|
+					var sig, key, frames, env, penv, file;
+					penv = EnvGen.ar(Env.adsr(pattack, pdecay, psustain, prelease), gate);
+					frames = BufFrames.kr(bufnum);
+					sig = ConvenientBufferPlayer.ar(
+						1,
+						bufnum,
+						rate*BufRateScale.kr(bufnum)*penv,
+						1,
+						pos*frames,
+						loop: loop
+					);
+					env = EnvGen.ar(Env.adsr(attack, decay, sustain, release), gate);
+					FreeSelf.kr(TDelay.kr(Done.kr(env),0.1));
+					sig = LPF.ar(sig, cutoff);
+					sig = sig + (LPF.ar(sig, 100, bass));
+					sig = Splay.ar(sig, spread: spread, center: pan, level: amp);
+					sig = LeakDC.ar(sig);
+					Out.ar(out, (sig*env));
+				}).add;
 
-		"building synth definitions".postln;
-		//buildFeed.play;
+				server.sync;
+				
+				SynthDef(\ConvenienceStereo, {
+					|
+					bufnum, out = 0, loop = 0, rate = 1, spread = 1, pan = 0, amp = 0.5,
+					attack = 0.01, decay = 0.5, sustain = 0.5, release = 1.0, pos = 0,
+					gate = 1, cutoff = 22e3, bass = 0.0
+					|
+					var sig, key, frames, env, file;
+					frames = BufFrames.kr(bufnum);
+					sig = ConvenientBufferPlayer.ar(
+						2,
+						bufnum,
+						rate*BufRateScale.kr(bufnum),
+						1,
+						pos*frames,
+						loop: loop
+					);
+					env = EnvGen.ar(Env.adsr(attack, decay, sustain, release), gate);
+					FreeSelf.kr(TDelay.kr(Done.kr(env),0.1));
+					sig = LPF.ar(sig, cutoff);
+					sig = sig + (LPF.ar(sig, 100, bass));
+					sig = Splay.ar(sig, spread: spread, center: pan, level: amp);
+					sig = LeakDC.ar(sig);
+					Out.ar(out, (sig*env));
+				}).add;
 
-		/*	  --------------------------------------  */
-		/*	  rate style							 */
-		/*	  ------------------------------------- */
-		SynthDef(\ConvenienceMono, {
-			|
-			bufnum, out = 0, loop = 0, rate = 1, spread = 1, pan = 0, amp = 0.5,
-			attack = 0.01, decay = 0.5, sustain = 0.5, release = 1.0, pos = 0,
-			pattack = 0.0, pdecay = 0.0, psustain = 1.0, prelease = 100.0,
-			// long hack.. when penv is not in use, penv should always be longer than env
-			gate = 1, cutoff = 22e3, bass = 0.0
-			|
-			var sig, key, frames, env, penv, file;
-			penv = EnvGen.ar(Env.adsr(pattack, pdecay, psustain, prelease), gate);
-			frames = BufFrames.kr(bufnum);
-			sig = ConvenientBufferPlayer.ar(
-				1,
-				bufnum,
-				rate*BufRateScale.kr(bufnum)*penv,
-				1,
-				pos*frames,
-				loop: loop
-			);
-			env = EnvGen.ar(Env.adsr(attack, decay, sustain, release), gate);
-			FreeSelf.kr(TDelay.kr(Done.kr(env),0.1));
-			sig = LPF.ar(sig, cutoff);
-			sig = sig + (LPF.ar(sig, 100, bass));
-			sig = Splay.ar(sig, spread: spread, center: pan, level: amp);
-			sig = LeakDC.ar(sig);
-			Out.ar(out, (sig*env));
-		}).add;
+				server.sync;
+				
+				/*	  --------------------------------------  */
+				/*	  for scaling, assuming samples are tuned */
+				/*	  ------------------------------------- */
+				SynthDef(\ConvenienceMonoScale, {
+					|
+					bufnum, out = 0, loop = 0, spread = 1, pan = 0, amp = 0.5,
+					attack = 0.01, decay = 0.5, sustain = 0.5, release = 1.0, pos = 0,
+					gate = 1, cutoff = 22e3, bass = 0.0, basefreq=440, freq
+					|
+					var sig, rate, frames, env, file;
+					frames = BufFrames.kr(bufnum);
+					rate = freq/basefreq;
+					sig = ConvenientBufferPlayer.ar(
+						1,
+						bufnum,
+						rate*BufRateScale.kr(bufnum),
+						1,
+						pos*frames,
+						loop: loop
+					);
+					env = EnvGen.ar(Env.adsr(attack, decay, sustain, release), gate);
+					FreeSelf.kr(TDelay.kr(Done.kr(env),0.1));
+					sig = LPF.ar(sig, cutoff);
+					sig = sig + (LPF.ar(sig, 100, bass));
+					sig = Splay.ar(sig, spread: spread, center: pan, level: amp);
+					sig = LeakDC.ar(sig);
+					Out.ar(out, (sig*env));
+				}).add;
+				
+				server.sync;
 
-		server.sync;
-		
-		SynthDef(\ConvenienceStereo, {
-			|
-			bufnum, out = 0, loop = 0, rate = 1, spread = 1, pan = 0, amp = 0.5,
-			attack = 0.01, decay = 0.5, sustain = 0.5, release = 1.0, pos = 0,
-			gate = 1, cutoff = 22e3, bass = 0.0
-			|
-			var sig, key, frames, env, file;
-			frames = BufFrames.kr(bufnum);
-			sig = ConvenientBufferPlayer.ar(
-				2,
-				bufnum,
-				rate*BufRateScale.kr(bufnum),
-				1,
-				pos*frames,
-				loop: loop
-			);
-			env = EnvGen.ar(Env.adsr(attack, decay, sustain, release), gate);
-			FreeSelf.kr(TDelay.kr(Done.kr(env),0.1));
-			sig = LPF.ar(sig, cutoff);
-			sig = sig + (LPF.ar(sig, 100, bass));
-			sig = Splay.ar(sig, spread: spread, center: pan, level: amp);
-			sig = LeakDC.ar(sig);
-			Out.ar(out, (sig*env));
-		}).add;
+				SynthDef(\ConvenienceStereoScale, {
+					|
+					bufnum, out = 0, loop = 0, spread = 1, pan = 0, amp = 0.5,
+					attack = 0.01, decay = 0.5, sustain = 0.5, release = 1.0, pos = 0,
+					gate = 1, cutoff = 22e3, bass = 0.0, basefreq=440, freq
+					|
+					var sig, rate, frames, env, file;
+					frames = BufFrames.kr(bufnum);
+					rate = freq/basefreq;
+					sig = ConvenientBufferPlayer.ar(
+						2,
+						bufnum,
+						rate*BufRateScale.kr(bufnum),
+						1,
+						pos*frames,
+						loop: loop
+					);
+					env = EnvGen.ar(Env.adsr(attack, decay, sustain, release), gate);
+					FreeSelf.kr(TDelay.kr(Done.kr(env),0.1));
+					sig = LPF.ar(sig, cutoff);
+					sig = sig + (LPF.ar(sig, 100, bass));
+					sig = Splay.ar(sig, spread: spread, center: pan, level: amp);
+					sig = LeakDC.ar(sig);
+					Out.ar(out, (sig*env));
+				}).add;
+				
+				server.sync;
 
-		server.sync;
-		
-		/*	  --------------------------------------  */
-		/*	  for scaling, assuming samples are tuned */
-		/*	  ------------------------------------- */
-		SynthDef(\ConvenienceMonoScale, {
-			|
-			bufnum, out = 0, loop = 0, spread = 1, pan = 0, amp = 0.5,
-			attack = 0.01, decay = 0.5, sustain = 0.5, release = 1.0, pos = 0,
-			gate = 1, cutoff = 22e3, bass = 0.0, basefreq=440, freq
-			|
-			var sig, rate, frames, env, file;
-			frames = BufFrames.kr(bufnum);
-			rate = freq/basefreq;
-			sig = ConvenientBufferPlayer.ar(
-				1,
-				bufnum,
-				rate*BufRateScale.kr(bufnum),
-				1,
-				pos*frames,
-				loop: loop
-			);
-			env = EnvGen.ar(Env.adsr(attack, decay, sustain, release), gate);
-			FreeSelf.kr(TDelay.kr(Done.kr(env),0.1));
-			sig = LPF.ar(sig, cutoff);
-			sig = sig + (LPF.ar(sig, 100, bass));
-			sig = Splay.ar(sig, spread: spread, center: pan, level: amp);
-			sig = LeakDC.ar(sig);
-			Out.ar(out, (sig*env));
-		}).add;
-		
-		server.sync;
+				/*	  --------------------------------------  */
+				/*	  bfft filter bins				synth	 */
+				/*	  ------------------------------------- */
+				~frame = 1024;
+				SynthDef(\ConvenienceBufBins, { | bufnum, out = 0, win = 1, loop = 0, spread = 1, pan = 0, amp = 0.5,
+					binRange =#[0, 512], gate = 1, attack = 0.01, decay = 0.01, sustain = 2,
+					release = 0.01, pos = 0, rate = 1 |
+					var in, chain, env, frames, sig;
+					frames = BufFrames.kr(bufnum);
+					env = EnvGen.ar(Env.adsr(attack, decay, sustain, release), gate, doneAction: 2);
+					in = PlayBuf.ar(1, bufnum, rate * BufRateScale.kr(bufnum), startPos: pos * frames, loop: loop);
+					chain = FFT(LocalBuf(~frame), in);
+					chain = chain.pvcollect(~frame, {| mag, phase, index |
+						if(index >= binRange[0], if(index <= binRange[1], mag, 0), 0);
+					}, frombin: 0, tobin: (~frame / 2) - 1, zeroothers: 0);
+					sig = IFFT(chain, win) * amp * env;
+					sig = Splay.ar(sig, spread: spread, center: pan, level: amp);
+					sig = LeakDC.ar(sig);
+					Out.ar(out, sig);
+				}).add;
 
-		SynthDef(\ConvenienceStereoScale, {
-			|
-			bufnum, out = 0, loop = 0, spread = 1, pan = 0, amp = 0.5,
-			attack = 0.01, decay = 0.5, sustain = 0.5, release = 1.0, pos = 0,
-			gate = 1, cutoff = 22e3, bass = 0.0, basefreq=440, freq
-			|
-			var sig, rate, frames, env, file;
-			frames = BufFrames.kr(bufnum);
-			rate = freq/basefreq;
-			sig = ConvenientBufferPlayer.ar(
-				2,
-				bufnum,
-				rate*BufRateScale.kr(bufnum),
-				1,
-				pos*frames,
-				loop: loop
-			);
-			env = EnvGen.ar(Env.adsr(attack, decay, sustain, release), gate);
-			FreeSelf.kr(TDelay.kr(Done.kr(env),0.1));
-			sig = LPF.ar(sig, cutoff);
-			sig = sig + (LPF.ar(sig, 100, bass));
-			sig = Splay.ar(sig, spread: spread, center: pan, level: amp);
-			sig = LeakDC.ar(sig);
-			Out.ar(out, (sig*env));
-		}).add;
-		
-		server.sync;
+				server.sync;
+				
+				SynthDef(\ConvenienceBufBinsScale, { | bufnum, out = 0, win = 1, loop = 0, spread = 1, pan = 0, amp = 0.5,
+					binRange =#[0, 512], gate = 1, attack = 0.01, decay = 0.01, sustain = 2,
+					release = 0.01, pos = 0, basefreq=440, freq |
+					var in, chain, env, frames, rate, sig;
+					frames = BufFrames.kr(bufnum);
+					rate = freq/basefreq;
+					env = EnvGen.ar(Env.adsr(attack, decay, sustain, release), gate, doneAction: 2);
+					in = PlayBuf.ar(1, bufnum, rate * BufRateScale.kr(bufnum), startPos: pos * frames, loop: 0);
+					chain = FFT(LocalBuf(~frame), in);
+					chain = chain.pvcollect(~frame, {| mag, phase, index |
+						if(index >= binRange[0], if(index <= binRange[1], mag, 0), 0);
+					}, frombin: 0, tobin: (~frame / 2) - 1, zeroothers: 0);
+					sig = IFFT(chain, win) * amp * env;
+					sig = Splay.ar(sig, spread: spread, center: pan, level: amp);
+					sig = LeakDC.ar(sig);
+					Out.ar(out, sig);
+				}).add;
 
-		/*	  --------------------------------------  */
-		/*	  bfft filter bins				synth	 */
-		/*	  ------------------------------------- */
-		~frame = 1024;
-		SynthDef(\ConvenienceBufBins, { | bufnum, out = 0, win = 1, loop = 0, spread = 1, pan = 0, amp = 0.5,
-			binRange =#[0, 512], gate = 1, attack = 0.01, decay = 0.01, sustain = 2,
-			release = 0.01, pos = 0, rate = 1 |
-			var in, chain, env, frames, sig;
-			frames = BufFrames.kr(bufnum);
-			env = EnvGen.ar(Env.adsr(attack, decay, sustain, release), gate, doneAction: 2);
-			in = PlayBuf.ar(1, bufnum, rate * BufRateScale.kr(bufnum), startPos: pos * frames, loop: loop);
-			chain = FFT(LocalBuf(~frame), in);
-			chain = chain.pvcollect(~frame, {| mag, phase, index |
+				server.sync;
+				
+				/*	  --------------------------------------  */
+				/*	  bfft filter bins input		synth	 */
+				/*	  ------------------------------------- */
+				/*SynthDef(\ConvenienceInBins, { | out = 0, in = 0, win = 1, amp = 0.5,
+				binRange =#[0, 512], gate = 1, attack = 0.01, decay = 0.01, sustain = 2,
+				release = 0.01, rate = 1 |
+				var sig, chain, env;
+				env = EnvGen.ar(Env.adsr(attack, decay, sustain, release), gate, doneAction: 2);
+				sig = SoundIn.ar(in);
+				chain = FFT(LocalBuf(~frame), sig);
+				chain = chain.pvcollect(~frame, {| mag, phase, index |
 				if(index >= binRange[0], if(index <= binRange[1], mag, 0), 0);
-			}, frombin: 0, tobin: (~frame / 2) - 1, zeroothers: 0);
-			sig = IFFT(chain, win) * amp * env;
-			sig = Splay.ar(sig, spread: spread, center: pan, level: amp);
-			sig = LeakDC.ar(sig);
-			Out.ar(out, sig);
-		}).add;
+				}, frombin: 0, tobin: (~frame / 2) - 1, zeroothers: 0);
+				Out.ar(out, IFFT(chain, win) * amp * env);
+				}).add;*/        
 
-		server.sync;
-		
-		SynthDef(\ConvenienceBufBinsScale, { | bufnum, out = 0, win = 1, loop = 0, spread = 1, pan = 0, amp = 0.5,
-			binRange =#[0, 512], gate = 1, attack = 0.01, decay = 0.01, sustain = 2,
-			release = 0.01, pos = 0, basefreq=440, freq |
-			var in, chain, env, frames, rate, sig;
-			frames = BufFrames.kr(bufnum);
-			rate = freq/basefreq;
-			env = EnvGen.ar(Env.adsr(attack, decay, sustain, release), gate, doneAction: 2);
-			in = PlayBuf.ar(1, bufnum, rate * BufRateScale.kr(bufnum), startPos: pos * frames, loop: 0);
-			chain = FFT(LocalBuf(~frame), in);
-			chain = chain.pvcollect(~frame, {| mag, phase, index |
-				if(index >= binRange[0], if(index <= binRange[1], mag, 0), 0);
-			}, frombin: 0, tobin: (~frame / 2) - 1, zeroothers: 0);
-			sig = IFFT(chain, win) * amp * env;
-			sig = Splay.ar(sig, spread: spread, center: pan, level: amp);
-			sig = LeakDC.ar(sig);
-			Out.ar(out, sig);
-		}).add;
+				/*	  --------------------------------------  */
+				/*	  PitchShift            		synth	 */
+				/*	  ------------------------------------- */
+				
+				SynthDef(\ConveniencePitchShift, {
+					|
+					bufnum, out = 0, loop = 0, rate = 1, spread = 1, pan = 0, amp = 0.5,
+					attack = 0.01, decay = 0.5, sustain = 0.5, release = 1.0, pos = 0,
+					pattack = 0.0, pdecay = 0.0, psustain = 1.0, prelease = 100.0,
+					// prelease long hack.. when "penvelope" is not in use, "penvelope" should always be longer than amplitude envelope
+					gate = 1, cutoff = 22e3, bass = 0.0, pitchRatio = 1.0, formantRatio = 1.0
+					|
+					var sig, key, frames, env, penv, file;
+					penv = EnvGen.ar(Env.adsr(pattack, pdecay, psustain, prelease), gate);
+					frames = BufFrames.kr(bufnum);
+					sig = ConvenientBufferPlayer.ar(
+						1,
+						bufnum,
+						rate*BufRateScale.kr(bufnum)*penv,
+						1,
+						pos*frames,
+						loop: loop
+					);
+					env = EnvGen.ar(Env.adsr(attack, decay, sustain, release), gate);
+					FreeSelf.kr(TDelay.kr(Done.kr(env),0.1));
+					sig = ConvenientPitchShiftPA.ar(
+						sig,
+						Pitch.kr(sig)[0], //pitch tracking
+						pitchRatio,
+						formantRatio
+					);
+					sig = LPF.ar(sig, cutoff);
+					sig = sig + (LPF.ar(sig, 100, bass));
+					sig = Splay.ar(sig, spread: spread, center: pan, level: amp);
+					sig = LeakDC.ar(sig);
+					Out.ar(out, (sig*env));
+					
+				}).add;
 
-		server.sync;
-		
-		/*	  --------------------------------------  */
-		/*	  bfft filter bins input		synth	 */
-		/*	  ------------------------------------- */
-		/*SynthDef(\ConvenienceInBins, { | out = 0, in = 0, win = 1, amp = 0.5,
-		binRange =#[0, 512], gate = 1, attack = 0.01, decay = 0.01, sustain = 2,
-		release = 0.01, rate = 1 |
-		var sig, chain, env;
-		env = EnvGen.ar(Env.adsr(attack, decay, sustain, release), gate, doneAction: 2);
-		sig = SoundIn.ar(in);
-		chain = FFT(LocalBuf(~frame), sig);
-		chain = chain.pvcollect(~frame, {| mag, phase, index |
-		if(index >= binRange[0], if(index <= binRange[1], mag, 0), 0);
-		}, frombin: 0, tobin: (~frame / 2) - 1, zeroothers: 0);
-		Out.ar(out, IFFT(chain, win) * amp * env);
-		}).add;*/        
+				server.sync;
 
-        /*	  --------------------------------------  */
-		/*	  PitchShift            		synth	 */
-		/*	  ------------------------------------- */
-		
-        SynthDef(\ConveniencePitchShift, {
-            |
-			bufnum, out = 0, loop = 0, rate = 1, spread = 1, pan = 0, amp = 0.5,
-			attack = 0.01, decay = 0.5, sustain = 0.5, release = 1.0, pos = 0,
-			pattack = 0.0, pdecay = 0.0, psustain = 1.0, prelease = 100.0,
-			// prelease long hack.. when "penvelope" is not in use, "penvelope" should always be longer than amplitude envelope
-			gate = 1, cutoff = 22e3, bass = 0.0, pitchRatio = 1.0, formantRatio = 1.0
-			|
-			var sig, key, frames, env, penv, file;
-			penv = EnvGen.ar(Env.adsr(pattack, pdecay, psustain, prelease), gate);
-			frames = BufFrames.kr(bufnum);
-			sig = ConvenientBufferPlayer.ar(
-				1,
-				bufnum,
-				rate*BufRateScale.kr(bufnum)*penv,
-				1,
-				pos*frames,
-				loop: loop
-			);
-			env = EnvGen.ar(Env.adsr(attack, decay, sustain, release), gate);
-			FreeSelf.kr(TDelay.kr(Done.kr(env),0.1));
-            sig = ConvenientPitchShiftPA.ar(
-		        sig,
-		        Pitch.kr(sig)[0], //pitch tracking
-		        pitchRatio,
-		        formantRatio
-	        );
-            sig = LPF.ar(sig, cutoff);
-			sig = sig + (LPF.ar(sig, 100, bass));
-			sig = Splay.ar(sig, spread: spread, center: pan, level: amp);
-			sig = LeakDC.ar(sig);
-			Out.ar(out, (sig*env));
-            
-        }).add;
+				SynthDef(\ConveniencePitchShiftScale, {
+					|
+					bufnum, out = 0, loop = 0, spread = 1, pan = 0, amp = 0.5,
+					attack = 0.01, decay = 0.5, sustain = 0.5, release = 1.0, pos = 0,
+					gate = 1, cutoff = 22e3, bass = 0.0, basefreq=440, freq,
+					pattack = 0.0, pdecay = 0.0, psustain = 1.0, prelease = 100.0,
+					// prelease long hack.. when "penvelope" is not in use, "penvelope" should always be longer than amplitude envelope
+					pitchRatio = 1.0, formantRatio = 1.0
+					|
+					var sig, rate, frames, env, file;
+					frames = BufFrames.kr(bufnum);
+					rate = freq/basefreq;
+					sig = ConvenientBufferPlayer.ar(
+						1,
+						bufnum,
+						rate*BufRateScale.kr(bufnum),
+						1,
+						pos*frames,
+						loop: loop
+					);
+					env = EnvGen.ar(Env.adsr(attack, decay, sustain, release), gate);
+					FreeSelf.kr(TDelay.kr(Done.kr(env),0.1));
+					sig = ConvenientPitchShiftPA.ar(
+						sig,
+						Pitch.kr(sig)[0], //pitch tracking
+						pitchRatio,
+						formantRatio
+					);
+					sig = LPF.ar(sig, cutoff);
+					sig = sig + (LPF.ar(sig, 100, bass));
+					sig = Splay.ar(sig, spread: spread, center: pan, level: amp);
+					sig = LeakDC.ar(sig);
+					Out.ar(out, (sig*env));
+					
+				}).add;
 
-		server.sync;
+				server.sync;
 
-        SynthDef(\ConveniencePitchShiftScale, {
-            |
-			bufnum, out = 0, loop = 0, spread = 1, pan = 0, amp = 0.5,
-			attack = 0.01, decay = 0.5, sustain = 0.5, release = 1.0, pos = 0,
-			gate = 1, cutoff = 22e3, bass = 0.0, basefreq=440, freq,
-            pattack = 0.0, pdecay = 0.0, psustain = 1.0, prelease = 100.0,
-			// prelease long hack.. when "penvelope" is not in use, "penvelope" should always be longer than amplitude envelope
-			pitchRatio = 1.0, formantRatio = 1.0
-            |
-			var sig, rate, frames, env, file;
-			frames = BufFrames.kr(bufnum);
-			rate = freq/basefreq;
-			sig = ConvenientBufferPlayer.ar(
-				1,
-				bufnum,
-				rate*BufRateScale.kr(bufnum),
-				1,
-				pos*frames,
-				loop: loop
-			);
-			env = EnvGen.ar(Env.adsr(attack, decay, sustain, release), gate);
-			FreeSelf.kr(TDelay.kr(Done.kr(env),0.1));
-            sig = ConvenientPitchShiftPA.ar(
-		        sig,
-		        Pitch.kr(sig)[0], //pitch tracking
-		        pitchRatio,
-		        formantRatio
-	        );
-            sig = LPF.ar(sig, cutoff);
-			sig = sig + (LPF.ar(sig, 100, bass));
-			sig = Splay.ar(sig, spread: spread, center: pan, level: amp);
-			sig = LeakDC.ar(sig);
-			Out.ar(out, (sig*env));
-            
-        }).add;
+				//buildFeed.stop;
+				win.close;
+				
+				synthsBuild = true;
+				addingSynths = false;
 
-		server.sync;
+				"Convenience synths build".postln;
 
-		//buildFeed.stop;
-		win.close;
-
-        "Convenience synths build".postln;
-
-		synthsBuild = true;
-		//^synthsBuild;
-		}.fork(AppClock)
+				//^synthsBuild;
+				}.fork(AppClock)
+			}
+		});
 	}
 }
 
