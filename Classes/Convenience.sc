@@ -2,10 +2,12 @@ Convenience {
 	// user config
 	// crawler load synths?
 	classvar loadSynths = true;
+	classvar verbosePosts = false;
 
 	// private config
 	classvar <dir, <buffers, <folderPaths;
 	classvar loadFn;
+	classvar listWindow;
 
 	const <supportedExtensions = #[\wav, \wave, \aif, \aiff, \flac];
 
@@ -121,7 +123,7 @@ Convenience {
 
 		// if no path is specified open crawl drag'n drop window
 		if (initpath.isNil, {
-			ConvenientView.crawlerWindow(depth, server);
+			ConvenientCrawlerView.open(depth, server);
 		}, {
 			// NO WINDOW USAGE
 			// initpath was set when crawl method was called
@@ -151,7 +153,7 @@ Convenience {
 		// count init depth
 		PathName(initpath).pathOnly.do{ | char |
 			// here we should have a guard func that removes the last slash in initpath if it was given
-			// aka ~/Desktop/soundFiles instead of ~/Desktop/soundFiles
+			// aka ~/Desktop/soundFiles/ instead of ~/Desktop/soundFiles
 			// for now if user writes a path that ends with "/" this breaks the depth control math/iteration
 			if (char == $/, {initPathDepthCount = initPathDepthCount + 1;})
 		};
@@ -220,10 +222,11 @@ Convenience {
 		};*/
 
 		if (folderPaths.isEmpty.not,{
+			"crawl::: piping directory and loading buffers".postln;
 			folderPaths.keysValuesDo{ | key, path |
 				this.load(path.asString, server);
 			};
-			"done piping".postln;
+			"crawl::: done piping and loading".postln;
 			// update folderPaths to be even with loaded buffers
 			folderPaths.keysDo{ | key |
 				//key.postln;
@@ -254,14 +257,14 @@ Convenience {
 				};
 				//"files: %".format(files).postln;
 
-					loadedBuffers = files.collect { | file |
+				loadedBuffers = files.collect { | file |
 					server.sync;
-					"reading first channel from\n\t %".format(file.fileName).postln;
+					if(verbosePosts.asBoolean,{
+						"reading first channel from\n\t %".format(file.fileName).postln;
+					});
 					Buffer.readChannel(server, file.fullPath;, channels: [0]).normalize(0.99);	
 				};	
 				
-				
-
 				//"\n\t loadedBuffers from folder: % --> %".format(folder.folderName,loadedBuffers).postln;
 				//server.sync; // danger danger only working when used before boot use update here instead?
 				//"loading into memory, hang on".postln;
@@ -269,7 +272,9 @@ Convenience {
 				// add loadedBuffers to dictionary with key from common folder
 				if (loadedBuffers.isEmpty.not, {
 					if (buffers.includesKey(folderKey).not, {
-						"added new folder as key: %".format(folderKey).postln;
+						if(verbosePosts.asBoolean,{
+							"added new folder as key: %".format(folderKey).postln;
+						});
 						//  add and remove spaces in folder name
 						buffers.add(folderKey -> loadedBuffers);
 					})
@@ -278,7 +283,11 @@ Convenience {
 					// update folderPaths
 					// folderPaths.removeAt(folderKey);
 				});
-			},{"folder % already loaded".format(folderKey).postln});
+			}, {
+				if(verbosePosts.asBoolean,{
+					"folder % already loaded".format(folderKey).postln
+				});
+			});
 		//}.fork{AppClock};
 	}
 
@@ -291,6 +300,7 @@ Convenience {
 				server = server ? Server.default;
 				ServerBoot.remove(loadFn, server);
 				"all buffers freed".postln;
+				this.prUpdateListView;
 			}, {
 				"no buffers to free".postln
 			})
@@ -315,6 +325,7 @@ Convenience {
 				// };
 				buffers.removeAt(folder);
 				"folder % is freed".format(folder).postln;
+				this.prUpdateListView;
 			});
 			if (folderPaths.includesKey(folder), {
 				folderPaths.removeAt(folder);
@@ -323,9 +334,10 @@ Convenience {
 		});
 	}
 
-	*clearFolderPathsDict {
-		this.prClearFolderPaths;
-	}
+	// *clearFolderPathsDict {
+	// 	this.prClearFolderPaths;
+	// }
+	
 	*randomFolder {
 		^this.folderNum(this.folders.size.rand)
 	}
@@ -345,15 +357,19 @@ Convenience {
 		buffers.clear;
 	}
 
-	*prFreeFolder { | folder |
-		buffers.do { | folders |
-			folder.do { | buf |
-				if (buf.isNil.not) {
-					buf.free
-				}
-			}
-		};
-		buffers.clear;
+	// *prFreeFolder { | folder |
+	// 	buffers.do { | folders |
+	// 		folder.do { | buf |
+	// 			if (buf.isNil.not) {
+	// 				buf.free
+	// 			}
+	// 		}
+	// 	};
+	// 	buffers.clear;
+	// }
+
+	*prUpdateListView {
+		ConvenientListView.update;
 	}
 
 	* addSynths { | server |
@@ -450,10 +466,10 @@ Convenience {
 	}
 
 	*list {
-		// buffers.keysValuesDo { |folderName, buffers|
-		// 	"% [%]".format(folderName, buffers.size).postln
-		// };
-		ConvenientView.listWindow(buffers);
+		buffers.keysValuesDo { |folderName, buffers|
+			"% [%]".format(folderName, buffers.size).postln
+		};
+		listWindow = ConvenientListView.open;
 	}
 
 	*prKeyify { | input |
@@ -468,6 +484,12 @@ Convenience {
 		.replace("å","aa")
 		.asSymbol;
 		^result
+	}
+
+	*bufferKeys {
+		^buffers.keys.collect { | keys |
+			keys;
+		};
 	}
 
 	*properties {

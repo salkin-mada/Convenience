@@ -1,12 +1,12 @@
-ConvenientView/* : View*/ {
-	classvar fontName = "Monospace";
+ConvenientCrawlerView/* : View*/ {
+	classvar fontName = "Roboto";
 	// classvar list;
 
 	// *initClass {
 	// 	list = Dictionary.new;
 	// }
 
-	*crawlerWindow{ |depth, server|
+	*open{ |depth, server|
 		// user config
 		var recursiveGuard = true; // redundant, but protects your mem and swap from insane typ 3e4 depth crawling
 		var maxDepth = 99; // guard threshold
@@ -16,7 +16,7 @@ ConvenientView/* : View*/ {
 		var cond = Condition(false);
 		var win, header, stateButton, sink, depthSetter;
 		var winW = 340, winH = 340;
-		var fontSize = 16, headerFontSize = 20;
+		var fontSize = 14, headerFontSize = 18;
 		var crawlerWindowStayOpen = false;
 
 		// strings
@@ -88,7 +88,7 @@ ConvenientView/* : View*/ {
 
 		// main focus actions
 		win.toFrontAction_({
-			win.background_(backgroundColor);
+			win.background_(backgroundColor).alpha_(1.0);
 			header.stringColor_(headerStringColor);
 			header.background_(headerbackgroundColor);
 
@@ -116,7 +116,7 @@ ConvenientView/* : View*/ {
 
 		win.endFrontAction_({
 			if (win.isClosed.not,{
-				win.background_(Color.clear);
+				win.background_(Color.clear).alpha_(0.4);
 				header.stringColor_(Color.clear);
 				header.background_(Color.clear);
 				stateButton.states_([
@@ -287,7 +287,7 @@ ConvenientView/* : View*/ {
 				"\ncrawl:::going to parser".postln;
 				// go to parser
 				Convenience.prParseFolders(initpath, depth, server);
-				"\ncrawl:::done parsing".postln;
+				"crawl:::done parsing".postln;
 			}.fork(AppClock)
 		}
 	}
