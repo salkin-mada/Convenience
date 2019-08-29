@@ -32,7 +32,7 @@ ConvenientListView : View {
 
 			win.endFrontAction_({
 				if (win.isClosed.not,{
-					win.background_(Color.white).alpha_(0.2)
+					win.background_(Color.white).alpha_(0.4)
 				})
 			});
 
@@ -70,7 +70,7 @@ ConvenientListView : View {
 					// 		Color.fromHexString(gradient.[y.linlin(0, winH, 0, (gradient.size-1))])
 					// 	);
 					// };
-                dragSource.font_(Font(size: fontSize+1.rand2));
+                dragSource.font_(Font(fontName, size: fontSize+1.rand2, bold: true));
 				win.refresh;
 				})
 			};
