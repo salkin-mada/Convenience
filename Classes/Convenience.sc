@@ -277,6 +277,7 @@ Convenience {
 						});
 						//  add and remove spaces in folder name
 						buffers.add(folderKey -> loadedBuffers);
+						ConvenientListView.update
 					})
 				}, {
 					//"no soundfiles in : %, skipped".format(folder.folderName).postln;
@@ -292,15 +293,15 @@ Convenience {
 	}
 
 	*free { | folder, server |
-		// free all no folder specified
-		if (folder.isNil,{
+		
+		if (folder.isNil,{ // free all no folder specified
 			if (buffers.isEmpty.not, {
 				this.prFreeBuffers;
 				this.prClearFolderPaths; // also reset parser -> empty dictionary of folder paths
 				server = server ? Server.default;
 				ServerBoot.remove(loadFn, server);
 				"all buffers freed".postln;
-				this.prUpdateListView;
+				ConvenientListView.update
 			}, {
 				"no buffers to free".postln
 			})
@@ -325,7 +326,7 @@ Convenience {
 				// };
 				buffers.removeAt(folder);
 				"folder % is freed".format(folder).postln;
-				this.prUpdateListView;
+				ConvenientListView.update
 			});
 			if (folderPaths.includesKey(folder), {
 				folderPaths.removeAt(folder);
@@ -367,10 +368,6 @@ Convenience {
 	// 	};
 	// 	buffers.clear;
 	// }
-
-	*prUpdateListView {
-		ConvenientListView.update;
-	}
 
 	* addSynths { | server |
 		if (ConvenientDefinitions.synthsBuild.asBoolean.not,{
