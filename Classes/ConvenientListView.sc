@@ -52,7 +52,7 @@ ConvenientListView : View {
 				var gradientStartPoint = Point(200.rand,200.rand);
 				var gradientEndPoint = Point(200.rand,200.rand);
                 var dragSource;
-				var text;
+				//var text;
 				var size = Convenience.buffers.at(key).size;
 				dragSource = DragSource(win, Rect(0,0,winW-10,dragSourceHeight))
 				.background_(Color.clear)
@@ -73,18 +73,12 @@ ConvenientListView : View {
 					// 		Color.fromHexString(gradient.[y.linlin(0, winH, 0, (gradient.size-1))])
 					// 	);
 					// };
-<<<<<<< HEAD
-                dragSource.font_(Font(size: fontSize+1.rand2));
-				
-				text = StatixText(win, Rect(0,0,winW-10,dragSourceHeight)).string_(size);
-				
-				win.refresh;
-=======
                 	//dragSource.font_(Font(fontName, size: fontSize+2.rand, bold: 2.rand.asBoolean));
 					dragSource.background_(Color.new(Color.rand.red, 0.5, 0.5));
 					win.refresh;
->>>>>>> d3ed01a5f7a77112b7a009a140ffdedd7db55bfd
-				})
+				});
+				//text = StaticText(win, Rect(0,0,winW-10,dragSourceHeight)).string_(size);
+				win.refresh;
 			};
 			//buffers.size
     }
