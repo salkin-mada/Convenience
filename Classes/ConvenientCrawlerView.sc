@@ -116,15 +116,15 @@ ConvenientCrawlerView/* : View*/ {
 
 		win.endFrontAction_({
 			if (win.isClosed.not,{
-				win.background_(Color.clear).alpha_(0.4);
-				header.stringColor_(Color.clear);
-				header.background_(Color.clear);
+				win.background_(Color.white).alpha_(0.4);
+				header.stringColor_(Color.white);
+				header.background_(Color.white);
 				stateButton.states_([
-					["transparent", Color.clear, Color.clear],
-					["transparent", Color.clear, Color.clear]
+					["transparent", Color.white, Color.white],
+					["transparent", Color.white, Color.white]
 				]);
-				depthSetter.stringColor_(Color.black);
-				depthSetter.background_(Color.black);
+				depthSetter.stringColor_(Color.white);
+				depthSetter.background_(Color.white);
 			})
 		});
 

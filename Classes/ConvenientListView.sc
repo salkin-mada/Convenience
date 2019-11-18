@@ -12,7 +12,7 @@ ConvenientListView : View {
 	}
 
 	*open {
-		var backgroundColor = Color.fromHexString("#301257");
+		var backgroundColor = Color.fromHexString("#808B9D");
 
 		if (listWindowOpen.not, {
 			// main
@@ -32,7 +32,7 @@ ConvenientListView : View {
 
 			win.endFrontAction_({
 				if (win.isClosed.not,{
-					win.background_(Color.white).alpha_(0.2)
+					win.background_(Color.white).alpha_(0.4)
 				})
 			});
 
@@ -47,7 +47,7 @@ ConvenientListView : View {
 	}
 
     *makeList {
-        var dragSourceStringColor = Color.fromHexString("#A2D6B5");
+        var dragSourceStringColor = Color.fromHexString("#4A304A");
         Convenience.bufferKeys.do{ | key |
 				var gradientStartPoint = Point(200.rand,200.rand);
 				var gradientEndPoint = Point(200.rand,200.rand);
@@ -73,33 +73,31 @@ ConvenientListView : View {
 					// 		Color.fromHexString(gradient.[y.linlin(0, winH, 0, (gradient.size-1))])
 					// 	);
 					// };
+<<<<<<< HEAD
                 dragSource.font_(Font(size: fontSize+1.rand2));
 				
 				text = StatixText(win, Rect(0,0,winW-10,dragSourceHeight)).string_(size);
 				
 				win.refresh;
+=======
+                	//dragSource.font_(Font(fontName, size: fontSize+2.rand, bold: 2.rand.asBoolean));
+					dragSource.background_(Color.new(Color.rand.red, 0.5, 0.5));
+					win.refresh;
+>>>>>>> d3ed01a5f7a77112b7a009a140ffdedd7db55bfd
 				})
 			};
 			//buffers.size
     }
 
-	update{arg theChanged, whatChanged ...args;
-		"Convenient View got notified!: %".format(args).postln;
-		switch(whatChanged,
-			\list, {
-				{
-                    this.makeList(win);
-					// modulesListView.layout_(VLayout(
-					// 	*this.class.writeInModulesView(lydserver.modules)
-					// 	//this.makeModulesListView(lydserver.modules)
-					// ));
-					this.refresh;
-					//modulesListView.refresh;
-				}.defer; // defer to make thread happy
-			},
-			{ // default
-				"\n\tupdate view: something uncatched has changed\n".postln;
-			}
-		)
+	*update{
+		if (listWindowOpen, {
+			this.prClear;
+			this.makeList(win);
+		})
+	}
+
+	*prClear{
+		win.view.children.do{ | child | child.remove };
+		win.view.decorator.reset;
 	}
 }
