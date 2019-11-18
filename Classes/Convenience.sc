@@ -88,7 +88,8 @@ Convenience {
 					\stretch, stretch,
 					\pos, pos,
 					\loop, loop,
-					\rate, rate, \pattack, pattack, \pdecay, pdecay, \psustain, psustain, \prelease, prelease,
+					\rate, rate,
+					\pattack, pattack, \pdecay, pdecay, \psustain, psustain, \prelease, prelease,
 					\degree, degree,
 					\octave, octave,
 					\root, root,
@@ -112,8 +113,9 @@ Convenience {
 		});
 	}
 
-	*s { | name |
-		Pdef(name).stop
+	*s { | name ... args |
+		Pdef(name).stop;
+		"s args in: %".format(args).postln;
 	}
 
 	*crawl { | initpath, depth = 0, server |
@@ -174,7 +176,8 @@ Convenience {
 					if (depthCounter <= depth, {
 						loadFolderFlag = true;
 						depthCounter = depthCounter+1;
-					}, { loadFolderFlag = false;
+					}, {
+						loadFolderFlag = false;
 					});
 				})
 			};
@@ -237,7 +240,7 @@ Convenience {
 				}
 			)};
 
-		}, {"crawler did not find any usable files".postln;});
+		}, {"crawler did not find any wav/aiff files".postln;});
 	}
 
 	*load { | path, server |
@@ -247,7 +250,7 @@ Convenience {
 
 		server = server ? Server.default;
 
-		
+
 		//{ // routine -> load files into buffers
 			if (buffers.includesKey(folderKey).not, {
 
@@ -262,9 +265,9 @@ Convenience {
 					if(verbosePosts.asBoolean,{
 						"reading first channel from\n\t %".format(file.fileName).postln;
 					});
-					Buffer.readChannel(server, file.fullPath;, channels: [0]).normalize(0.99);	
-				};	
-				
+					Buffer.readChannel(server, file.fullPath;, channels: [0]).normalize(0.99);
+				};
+
 				//"\n\t loadedBuffers from folder: % --> %".format(folder.folderName,loadedBuffers).postln;
 				//server.sync; // danger danger only working when used before boot use update here instead?
 				//"loading into memory, hang on".postln;
@@ -300,6 +303,7 @@ Convenience {
 				server = server ? Server.default;
 				ServerBoot.remove(loadFn, server);
 				"all buffers freed".postln;
+				// update the list view
 				this.prUpdateListView;
 			}, {
 				"no buffers to free".postln
@@ -325,8 +329,13 @@ Convenience {
 				// };
 				buffers.removeAt(folder);
 				"folder % is freed".format(folder).postln;
+				// update the list view
 				this.prUpdateListView;
+			}, {
+				"folder key does not exist".postln;
 			});
+
+			// removing the absolute path to folder
 			if (folderPaths.includesKey(folder), {
 				folderPaths.removeAt(folder);
 				//"real folder path removed".postln;
@@ -337,7 +346,7 @@ Convenience {
 	// *clearFolderPathsDict {
 	// 	this.prClearFolderPaths;
 	// }
-	
+
 	*randomFolder {
 		^this.folderNum(this.folders.size.rand)
 	}
@@ -372,19 +381,16 @@ Convenience {
 		ConvenientListView.update;
 	}
 
-	* addSynths { | server |
+	*addSynths { | server |
 		if (ConvenientDefinitions.synthsBuild.asBoolean.not,{
 			ConvenientDefinitions.addSynths(server);
 		});
 	}
 
 	*get { | folder, index |
-		// "*get".postln;
-		// folder.postln;
-		// index.postln;
 	
 		if (buffers.notEmpty, {
-			
+
 			var bufferGroup;
 
 			// if folder is unspecified
@@ -406,8 +412,8 @@ Convenience {
 					folder = Convenience.folders.asArray[0];
 					"*get::replacing with: %".format(folder).postln;
 				}, {
-					Error("Convenience::*get:: 
-					user is asking for folder which is not there, 
+					Error("Convenience::*get::
+					user is asking for folder which is not there,
 					but *get cant find another folder to replace it with").throw;
 					^nil
 				})
