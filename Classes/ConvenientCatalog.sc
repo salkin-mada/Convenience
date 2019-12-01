@@ -1,6 +1,12 @@
-ConvenientDefinitions {
+ConvenientCatalog {
     classvar <synthsBuild = false;
 	classvar <addingSynths = false;
+    
+	classvar <modules;
+    classvar <functions;
+
+    classvar <>numLFOs;
+    classvar lfosLoaded = false;
 
 	*addSynths { | server |
 
@@ -8,7 +14,7 @@ ConvenientDefinitions {
 		addingSynths = true;
 
 		server.doWhenBooted{
-			var win = Window.new("adding synths", Rect(450,450,250,250))
+			var win = Window.new("adding synths", Rect(450,450,250,250), resizable: false)
 			.background_(Color.green)
 			.alwaysOnTop_(true)
 			.front;
@@ -299,10 +305,262 @@ ConvenientDefinitions {
 			}
 		});
 	}
+
+	*prModules { | numchans = 2 |
+		/*
+		All fx parameters are normalized in a bipolar fashion, 
+		meaning all parameters expect signals of -1.0 to 1.0 (standard for most ugens)
+		*/
+        // thanks to Mads
+		// Effect functions
+		modules = (
+			comb: {|in, delay=0.25, decay=1|
+				CombC.ar(
+					in, 
+					0.5, 
+					delay.linlin(-1.0,1.0,0.0001,5), 
+					decay.linlin(-1.0,1.0,0.01,2.0)
+				)
+			},
+			allpass: {|in, delay=0.25, decay=1|
+				AllpassC.ar(
+					in, 
+					0.5, 
+					delay.linlin(-1.0,1.0,0.0001,5.0), 
+					decay.linlin(-1.0,1.0,0.01,5.0)
+				)
+			},
+			hpf: {|in, cutoff=500, res=0.75|
+				DFM1.ar(
+					in, 
+					cutoff.linexp(-1.0,1.0,40,20000), 
+					res.linlin(-1.0,1.0,0.0,1.0), 
+					1, 
+					1, 
+					0
+				)
+
+			},
+			lpf: {|in, cutoff=500, res=0.75|
+				DFM1.ar(
+					in, 
+					cutoff.linexp(-1.0,1.0,40,20000), 
+					res.linlin(-1.0,1.0,0.0,1.0), 
+					1, 
+					0, 
+					0
+				)
+
+			},
+			// Ring modulation stolen from SuperDirt. ring=modilation amount, ringf=modfreq,ringdf=slide in modfreq
+			dirtring: { |in, ringf = 0.5, ringdf=0.15|
+				var signal, mod;
+				ringf = ringf.linlin(-1.0,1.0,0.0001,1.0);
+				signal = in;
+				mod = SinOsc.ar(XLine.kr(ringf, ringf + ringdf.linlin(-1.0,1.0,0.001,1.0)).linexp(0.0,1.0,20,20000));
+				ring1(signal, mod)/2;
+			},
+			// Taken from Thor Magnussons book Scoring Sound: https://leanpub.com/ScoringSound/read#leanpub-auto-flanger 
+			flanger: { |in, flangdelay=0.1, flangdepth=0.08, flangrate=0.06, flangfb=0.01|
+				var input, maxdelay, maxrate, dsig, mixed, local;
+				maxdelay = 0.013;
+				maxrate = 10.0;
+				input = in;
+				flangdelay = flangdelay.linlin(-1.0,1.0,0.0001,0.1);
+				flangrate = flangrate.linlin(-1.0,1.0,0.00001,1.0);
+				flangdepth = flangdepth.linlin(-1.0,1.0,0.0,1.0);
+				flangfb = flangfb.linlin(-1.0,1.0,0.0,1.0);
+
+				local = LocalIn.ar(numchans, 0.0);
+
+				dsig = AllpassC.ar( 
+					input + (local * flangfb),
+					maxdelay * 2,
+					// very similar to SinOsc (try to replace it) - Even use LFTri
+					LFPar.kr( 
+						flangrate * maxrate,
+						0,
+						flangdepth * maxdelay,
+						flangdelay * maxdelay
+					),
+					0
+				);
+
+				mixed = input + dsig;
+				LocalOut.ar(mixed);
+				mixed;
+			}, 
+
+			// Taken from Thor Magnussons book Scoring Sound: https://leanpub.com/ScoringSound/read#leanpub-auto-chorus 
+			chorus: { |in, chpredelay=0.08, chrate=0.05, chdepth=0.1, chphasediff=0.5|
+					var sig, modulators, numDelays = 12;
+					chpredelay = chpredelay.linlin(-1.0,1.0,0.0001,0.25);
+					chrate = chrate.linexp(-1.0,1.0,0.0001,10.25);
+					chdepth = chdepth.linlin(-1.0,1.0,0.0,1.0);
+					chphasediff = chphasediff.linlin(-1.0,1.0,0.00001,1.0);
+
+					in = in * numDelays.reciprocal;
+					modulators = Array.fill(numDelays, {arg i;
+						LFPar.kr(chrate * rrand(0.94, 1.06), chphasediff * i, chdepth, chpredelay)}
+					); 
+					sig = DelayC.ar(in, 0.5, modulators);  
+					numDelays.reciprocal * sig.sum!numchans;
+				},
+			waveloss: {|in, loss=0.25|
+				WaveLoss.ar(in, loss.linlin(-1.0,1.0,0,40),  outof: 40,  mode: 2)
+			},
+			fs: {|in, shiftfreq=1|
+				FreqShift.ar(in, shiftfreq)
+			},
+			ps: {|in, pitch=1.25, pd=0.001, td=0.0001|
+				PitchShift.ar(
+					in, 
+					0.25, 
+					pitch.linlin(-1.0,1.0,0.0,5.0), 
+					pd.linlin(-1.0,1.0,0.0,1.0), 
+					td.linlin(-1.0,1.0,0.0,1.0)
+				)
+			},
+			freeverb: {|in, verb=0.5, damp=0.25|
+				FreeVerb2.ar(
+					in[0],  
+					in[1],  
+					1,  
+					verb.linexp(-1.0,1.0,0.001,5.0),  
+					damp.linlin(-1.0,1.0,0.0,1.0)
+				)
+			},
+		);
+	}
+
+    *prFunctions {
+        // Control functions
+		functions = (
+			saw: {|freq=1, amp=1|
+				LFSaw.kr(LFDNoise3.kr(freq*10) * freq) * amp
+			},
+			lfnoise3: {|freq=1, amp=1|
+				LFDNoise3.kr(freq, amp)
+			},
+			fbsaw1: {|freq=0.5, amp=1.0|
+				var fb = LocalIn.kr(1,0.5).lag;
+				var sig = LFSaw.kr(freq+fb, 0);
+
+				sig = sig + LFSaw.kr(sig + freq / 2,  pi);
+				sig = sig + LFSaw.kr(sig + freq / 3,  -pi);
+				sig = sig + VarSaw.kr(sig + freq * 3.3, 0, sig * fb.unipolar.lag3,  mul: amp);
+
+				sig = sig * LFNoise2.kr(freq * 100).range(0.90,1.1);
+
+				sig = sig.wrap(-1.0,1.0);
+
+				sig = sig.lag2;
+
+				LocalOut.kr(sig);
+
+				sig
+			},
+			sinoscfb: {|freq=1, amp=1|
+				SinOscFB.kr(freq, LFNoise2.kr(freq*11).unipolar, amp)
+			},
+			henon1: {|freq=10, amp=1|
+				A2K.kr(
+					HenonC.ar(
+						freq, 
+						LFNoise2.kr(freq, 0.2, 1.5),
+						LFNoise2.kr(freq*10, 0.5, 0.15),
+					) * amp
+				)
+			},
+			noisering: {|freq=1.0001, amp=1.0|
+				Demand.kr(
+					Impulse.kr(freq*10), 
+					0, 
+					DNoiseRing(
+						change: LFNoise2.kr(freq*10).unipolar,					
+						chance: LFNoise2.kr(freq*100).unipolar,					
+						numBits: 32
+					)
+				).linlin(0, 2**32, -1.0, 1.0) * amp
+			}
+		);
+    }
+
+    *prSynthGraph { | name, busnum = 0, numLayers = 10, out |
+
+		if(out.isNil.not, {
+			// prepare module
+			this.prModules;
+
+			// Make synth graph
+			name = name.asSymbol;
+			Ndef(name).clear;
+
+			Ndef(name, {
+				SoundIn.ar(busnum)
+			}).playN(out);
+
+			(1..numLayers).do{ | i | 
+				Ndef(name)[i] = \kfilter -> modules.choose
+				// Ndef(name)[i] = \kfilter -> e[\comb]
+			};
+
+			Ndef(name)[1000] = \filter -> { | in |
+				LeakDC.ar(Limiter.ar(in/2))
+			};
+
+		}, {"module needs an output destination, please".postln})
+
+    }
+
+    *prMakeLFOs { |freq, randomSeed = 9123|
+		//prepare functions
+		this.prFunctions;
+
+        thisThread.randSeed_(randomSeed);
+
+        (1..numLFOs).do{|i|
+            var name = "lfo%".format(i).asSymbol;
+            Ndef(name).source = functions.choose; // get random func
+            // lfo freq multiplied per lfo queried by synthGraph name
+            Ndef(name).set(\freq, exprand(0.01,freq * i), \amp, rrand(0.0,1.0))
+        };
+
+        lfosLoaded = true;
+    }
+
+    *prClearLFOs {
+
+    }
+
+    *prMapLFOs { | target, prob |
+
+        if(Ndef(target).isPlaying /*.loaded not working*/, {
+                
+            if(lfosLoaded == true, {
+                Ndef(target).controlNames.do{ | ctrl |
+                    var name = ctrl.name;
+
+                    if(prob.coin, {
+                        var lfoname = "lfo%".format(numLFOs.rand).asSymbol;
+
+                        "mapping % to %".format(lfoname, name).postln;
+
+                        Ndef(target).map(
+                            name, 
+                            Ndef(lfoname)
+                        ).set(\wet1000, 1)
+                    }, {
+                        "not mapping %".format(name).postln;
+                    })
+                }
+            })       
+        }, {"target does not exist".postln})
+    }
 }
 
 // These following Ugens is used with the biggest thanks to it originators
-// They are used here as these renamed copies for Convenience purposes
+// They are used here as these renamed copies for Convenient purposes
 
 ConvenientBufferPlayer {
 	// copy of PlayBufCF

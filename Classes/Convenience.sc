@@ -1,13 +1,15 @@
 Convenience {
 	// user config
-	// crawler load synths?
-	classvar loadSynths = true;
-	classvar verbosePosts = false;
+	classvar loadSynths = true; // should crawler auto load synths
+	classvar verbosePosts = false; // debug or interest
+	classvar suggestions = true; // you want some?
 
 	// private config
 	classvar <dir, <buffers, <folderPaths;
 	classvar loadFn;
 	classvar listWindow;
+
+	classvar working = false;
 
 	const <supportedExtensions = #[\wav, \wave, \aif, \aiff, \flac];
 
@@ -27,8 +29,13 @@ Convenience {
 		basefreq = 440, fftOnOff = 0, binRange = 20, pitchShiftOnOff = 0, pitchRatio = 1.0, formantRatio = 1.0 |
 
 		//var return;
+		// if (suggestions == true, {
+		// 	if (Main.packages.asDict.includesKey(\Else).not, {
+		// 		"\tConvenience:: heavily suggests to install the 'Else' Quark".postln;
+		// 	});
+		// });
 
-		if (ConvenientDefinitions.synthsBuild, {
+		if (ConvenientCatalog.synthsBuild, {
 			if(name.isNil,{"needs a key aka name, please".throw; ^nil});
 
 			// if folder is unspecified in Convenience.p func
@@ -69,7 +76,9 @@ Convenience {
 					//"\tusing tempoclock".postln;
 				})
 			}, {
-				"\tConvenience:: suggests to install Utopia Quark".postln;
+				if (suggestions == true, {
+					"\tConvenience:: suggests to install 'Utopia' Quark (see: BeaconClock)".postln;
+				});
 				tempo = TempoClock(tempo);
 			});
 
@@ -252,21 +261,48 @@ Convenience {
 
 
 		//{ // routine -> load files into buffers
+			// check that folderKey does not already exist
 			if (buffers.includesKey(folderKey).not, {
 
 				// check header only return item if it is supported
+				// files = folder.entries.select { | file |
+				// 	supportedExtensions.includes(file.extension.toLower.asSymbol)
+				// };
+
 				files = folder.entries.select { | file |
-					supportedExtensions.includes(file.extension.toLower.asSymbol)
+					var hiddenFile;
+					var result;
+					// check if file is dot type
+					file.fileName.do{ | char, i |
+						if(char.isPunct and: i == 0, {
+							if(verbosePosts == true, {
+								"found a dot file - avoiding -> %".format(file).postln
+							});
+							hiddenFile = true;
+						})
+					};
+	
+					if(hiddenFile.asBoolean.not, {
+						result = supportedExtensions.includes(file.extension.toLower.asSymbol);
+					}, {result = false});
+
+					result;
 				};
+
 				//"files: %".format(files).postln;
 
 				loadedBuffers = files.collect { | file |
 					server.sync;
+					working = true;
 					if(verbosePosts.asBoolean,{
 						"reading first channel from\n\t %".format(file.fileName).postln;
 					});
 					Buffer.readChannel(server, file.fullPath;, channels: [0]).normalize(0.99);
 				};
+
+				if (working == true, {
+					working = false;
+				});
 
 				//"\n\t loadedBuffers from folder: % --> %".format(folder.folderName,loadedBuffers).postln;
 				//server.sync; // danger danger only working when used before boot use update here instead?
@@ -296,7 +332,7 @@ Convenience {
 	}
 
 	*free { | folder, server |
-		
+
 		if (folder.isNil,{ // free all no folder specified
 			if (buffers.isEmpty.not, {
 				this.prFreeBuffers;
@@ -380,13 +416,13 @@ Convenience {
 	}
 
 	*addSynths { | server |
-		if (ConvenientDefinitions.synthsBuild.asBoolean.not,{
-			ConvenientDefinitions.addSynths(server);
+		if (ConvenientCatalog.synthsBuild.asBoolean.not,{
+			ConvenientCatalog.addSynths(server);
 		});
 	}
 
 	*get { | folder, index |
-	
+
 		if (buffers.notEmpty, {
 
 			var bufferGroup;
@@ -463,17 +499,24 @@ Convenience {
 	}
 
 	*files {
-		^buffers.keysValuesDo { |folderName, bufferArray|
+		^buffers.keysValuesDo { | folderName, bufferArray |
 			bufferArray.do{| buffer | "% -> %".format(folderName, buffer).postln
 			}
 		}
 	}
 
-	*list {
-		buffers.keysValuesDo { |folderName, buffers|
+	*list { | gui = false |
+		buffers.keysValuesDo { | folderName, buffers |
 			"% [%]".format(folderName, buffers.size).postln
 		};
-		listWindow = ConvenientListView.open;
+
+		if(working == true, {
+			"not all folders have been loaded yet, working on it".postln;
+		});
+
+		if (gui == true, {
+			listWindow = ConvenientListView.open;
+		});
 	}
 
 	*prKeyify { | input |
@@ -494,6 +537,9 @@ Convenience {
 		^buffers.keys.collect { | keys |
 			keys;
 		};
+		// ^buffers.keys.collect { | keys |
+		// 	keys;
+		// }.asArray;
 	}
 
 	*properties {
@@ -542,6 +588,7 @@ Convenience {
 			if(pitchshift.isNil) {pitchshift = 0};
 
 			case
+			// favoring pitchshift
 			{fft == 1 and: pitchshift == 0 and: scaling == 0} {
 				~instrument = \ConvenienceBufBins;
 				//"FFT".postln;
@@ -627,6 +674,21 @@ Convenience {
 		result = [binLow, binHigh];
 		//return the bin-range in an array
 		^result
+	}
+	
+	*modul { | name = \ConvenientSynthGraph, busnum, numLayers = 10, out |
+		if(busnum.isNil.not, {
+			ConvenientCatalog.prSynthGraph(name, busnum, numLayers, out)
+		}, {"no busnum(s) specified".postln})
+	}
+
+	*lfos { | numLFOs = 10, freq = 0.1 |
+		ConvenientCatalog.numLFOs_(numLFOs);
+		ConvenientCatalog.prMakeLFOs(freq);
+	}
+
+	*map { | target = \ConvenientSynthGraph, prob = 0.75 |
+		ConvenientCatalog.prMapLFOs(target, prob);
 	}
 
 

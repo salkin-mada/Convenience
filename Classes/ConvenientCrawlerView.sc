@@ -53,7 +53,7 @@ ConvenientCrawlerView/* : View*/ {
 		var dropOvalSize = 50;
 
 		// main
-		win = Window.new("crawler", /*resizable: false*//*resizable breaks setInnerExtent*/).acceptsMouseOver_(true)
+		win = Window.new("crawler", Rect(450,450,winW,winH), resizable: false).acceptsMouseOver_(true)
 		.background_(backgroundColor)
 		.setInnerExtent(winW, winH)
 		.alwaysOnTop_(true);

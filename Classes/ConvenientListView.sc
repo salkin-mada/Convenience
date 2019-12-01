@@ -57,7 +57,7 @@ ConvenientListView : View {
 				dragSource = DragSource(win, Rect(0,0,winW-10,dragSourceHeight))
 				.background_(Color.clear)
 				.stringColor_(dragSourceStringColor)
-				.object_("\\"++"%".format(key)).align_(\center)
+				.object_("'"++key++"'").align_(\center)
 				.string_("% |%|".format(key, size))
 				.font_(Font(fontName, fontSize, bold: true))
 				.mouseOverAction_({ | view, x, y |
