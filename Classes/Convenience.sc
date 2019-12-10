@@ -161,11 +161,15 @@ Convenience {
 
 		dir = initpath;
 
+		/*protection against setting an initpath ending with / or // etc,
+		which will break the depth control*/
+		while({initpath.endsWith("/")}, {
+			if(verbosePosts.asBoolean, {"removed /".postln; });
+			initpath = initpath[..initpath.size-2]
+		});
+
 		// count init depth
 		PathName(initpath).pathOnly.do{ | char |
-			// here we should have a guard func that removes the last slash in initpath if it was given
-			// aka ~/Desktop/soundFiles/ instead of ~/Desktop/soundFiles
-			// for now if user writes a path that ends with "/" this breaks the depth control math/iteration
 			if (char == $/, {initPathDepthCount = initPathDepthCount + 1;})
 		};
 		//"initPathDepthCount: %".format(initPathDepthCount).postln;
@@ -281,7 +285,7 @@ Convenience {
 							hiddenFile = true;
 						})
 					};
-	
+
 					if(hiddenFile.asBoolean.not, {
 						result = supportedExtensions.includes(file.extension.toLower.asSymbol);
 					}, {result = false});
@@ -675,7 +679,7 @@ Convenience {
 		//return the bin-range in an array
 		^result
 	}
-	
+
 	*modul { | name = \ConvenientSynthGraph, busnum, numLayers = 10, out |
 		if(busnum.isNil.not, {
 			ConvenientCatalog.prSynthGraph(name, busnum, numLayers, out)
