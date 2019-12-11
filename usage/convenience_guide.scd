@@ -160,7 +160,6 @@ z.s(\ps);
 
 // personal different things tester
 ////////////////////////////////////////////////////
-Convenience.randomFolder
 ZzzZzZzzzZzz.randomFolder
 Convenience.folderPaths.keysDo{|i|i.postln}
 Convenience.folderPaths.size
@@ -171,49 +170,14 @@ Convenience.folders
 Convenience.folders.size
 Convenience.folders.do{|item| item.postln}
 
-Convenience.free(\bats)
-Convenience.free(\hurlumhej)
-Convenience.free(\kirke_orgel)
-Convenience.free(\snappi)
-Convenience.free(\wood_blocks)
-Convenience.free(\trylleri)
+Convenience.free(\someFolder)
 Convenience.free // free all
 
 Convenience.list.size
-Convenience.p(\yap, pan: Psrp(0.3234), dur: 0.15, folder: Pfunc({Convenience.folderNum(10.rand)}).trace)
+Convenience.p(\playos, pan: Psrp(0.3234), dur: 0.15, folder: Pfunc({Convenience.folderNum(10.rand)}).trace)
 
-(
-Convenience.p(\yap,
-	pan: Psrp(0.3234),
-	dur: 0.15*Prand((1..5), inf),
-	stretch: Psine(0.05).linlin(-1.0,1.0,0.2,1.0),
-	folder: Pfunc({Convenience.randomFolder}).trace(prefix:"folder= "),
-	index: Prand((0..100), inf),
-	//pos: Prand((0..40)/100, inf),
-	rate: 1.8,
-	amp: 0.4,
-	sustain: 0.2,
-	release: 0.01+Prand((0..20)/10, inf));
-)
-Convenience.s(\yap);
-(
-Convenience.p(\sup,
-	pan: Psrp(0.3234),
-	dur: 0.15*Prand((1..5), inf),
-	stretch: Psine(0.05).linlin(-1.0,1.0,0.2,1.0),
-	folder: Convenience.folderNum(18).postln,
-	index: Prand((0..100), inf),
-	rate: 1.8,
-	amp: 0.7,
-	sustain: 0.7,
-	release: 0.01+Prand((0..20)/10, inf))
-)
-Convenience.s(\sup)
-
-Convenience.crawl("/blabla/bbla", depth: 9);
+Convenience.crawl("/some/folder", depth: 5);
 Convenience.crawl; // open dialog
-
-Convenience.crawl("/blabla/bbla", depth: 3)
 Convenience.buffers.keysDo{|item| item.postln}
 Convenience.folders
 
@@ -222,6 +186,6 @@ Convenience.folderPaths.keys
 Convenience.folders.collect{|item| item.postln}
 Convenience.folders.size
 Convenience.buffers
-Convenience.get(\tg500_fx, 2).path
-Convenience.get(\test, 4)
+Convenience.get(\someFolder, 2).path
+Convenience.get(\someFolder, 4)
 
