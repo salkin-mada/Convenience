@@ -697,3 +697,101 @@ Convenience {
 
 
 }
+
+
+
+
+
+
+
+// (
+// var initpath= PathName("~/Desktop//////");
+// var depth= 1; // set how deep you want to go
+// var initPathDepthCount= initpath.fullPath.withTrailingSlash.split(thisProcess.platform.pathSeparator).size;
+// ~acceptedItems= Set.new();
+// ~rejectedItems= Set.new();
+// initpath.deepFiles.do{|item|
+// 	if(item.fullPath.split(thisProcess.platform.pathSeparator).size-initPathDepthCount<=depth, {
+// 		~acceptedItems.add(item);
+// 		"accepted\n\t -> %\n".format(item.fileName).postln;
+// 	}, {
+// 		~rejectedItems.add(item);
+// 		"rejected\n\t -> %\n".format(item.fileName).postln;
+// 	});
+// };
+// "number of accepted files %".format(~acceptedItems.size).postln;
+// "number of rejected files %".format(~rejectedItems.size).postln;
+// ~acceptedItems.clear;
+// ~rejectedItems.clear;
+// "".postln;
+// )
+
+
+
+
+
+
+
+
+
+/*play{SinOsc.ar(400, mul: 0.3)!2}
+
+(
+Pdef(\main, {
+	Ppar([
+		Pbindef(\first,
+			\dur, Pseq([Rest(3), 8], inf),
+			\degree, Pseq([5,9], inf)
+		).trace(prefix: '1'),
+		Pbindef(\second,
+			\dur, Pseq([Rest(8), 12], inf),
+			\degree, Pseq([2,3], inf),
+			\octave, 6
+		).trace(prefix: '2'),
+		Pbindef(\third,
+			\dur, Pseq([Rest(15), 20], inf),
+			\degree, Pseq([10,8], inf),
+			\octave, 5
+		).trace(prefix: '3')
+	])
+}).play
+)
+
+(
+Pdef(\main, {
+	Ppar([
+		Pbindef(\first,
+			\dur, Pseq([Rest(0.5), 8], inf),
+			\degree, Pseq([5,9], inf)
+		).trace(prefix: '1'),
+		Pbindef(\second,
+			\dur, Pseq([Rest(1), 12], inf),
+			\degree, Pseq([2,3], inf),
+			\octave, 6
+		).trace(prefix: '2'),
+		Pbindef(\third,
+			\dur, Pseq([Rest(3), 20], inf),
+			\degree, Pseq([10,8], inf),
+			\octave, 5
+		).trace(prefix: '3')
+	])
+}).play
+)
+
+
+
+{SinOsc.ar(730)!2}.play
+
+
+
+Pif
+
+PS  classes
+
+Pdef(\main).isPlaying
+
+
+.poll(,)*/
+
+
+
