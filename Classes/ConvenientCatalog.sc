@@ -41,23 +41,20 @@ ConvenientCatalog {
 				SynthDef(\ConvenienceMono, {
 					|
 					bufnum, out = 0, loop = 0, rate = 1, spread = 1, pan = 0, amp = 0.5,
-					attack = 0.01, decay = 0.5, sustain = 0.5, release = 1.0, pos = 0,
-					pattack = 0.0, pdecay = 0.0, psustain = 1.0, prelease = 100.0,
-					// long hack.. when penv is not in use, penv should always be longer than env
+					attack = 0.01, sustain = 0.5, release = 1.0, pos = 0,
 					gate = 1, cutoff = 22e3, bass = 0.0
 					|
-					var sig, key, frames, env, penv, file;
-					penv = EnvGen.ar(Env.linen(pattack, pdecay, psustain, prelease), gate);
+					var sig, key, frames, env, file;
 					frames = BufFrames.kr(bufnum);
 					sig = ConvenientBufferPlayer.ar(
 						1,
 						bufnum,
-						rate*BufRateScale.kr(bufnum)*penv,
+						rate*BufRateScale.kr(bufnum),
 						1,
 						pos*frames,
 						loop: loop
 					);
-					env = EnvGen.ar(Env.linen(attack, decay, sustain, release), gate);
+					env = EnvGen.ar(Env.linen(attack, sustain, release), gate);
 					FreeSelf.kr(TDelay.kr(Done.kr(env),0.1));
 					sig = LPF.ar(sig, cutoff);
 					sig = sig + (LPF.ar(sig, 100, bass));
@@ -71,7 +68,7 @@ ConvenientCatalog {
 				SynthDef(\ConvenienceStereo, {
 					|
 					bufnum, out = 0, loop = 0, rate = 1, spread = 1, pan = 0, amp = 0.5,
-					attack = 0.01, decay = 0.5, sustain = 0.5, release = 1.0, pos = 0,
+					attack = 0.01, sustain = 0.5, release = 1.0, pos = 0,
 					gate = 1, cutoff = 22e3, bass = 0.0
 					|
 					var sig, key, frames, env, file;
@@ -84,7 +81,7 @@ ConvenientCatalog {
 						pos*frames,
 						loop: loop
 					);
-					env = EnvGen.ar(Env.linen(attack, decay, sustain, release), gate);
+					env = EnvGen.ar(Env.linen(attack, sustain, release), gate);
 					FreeSelf.kr(TDelay.kr(Done.kr(env),0.1));
 					sig = LPF.ar(sig, cutoff);
 					sig = sig + (LPF.ar(sig, 100, bass));
@@ -101,7 +98,7 @@ ConvenientCatalog {
 				SynthDef(\ConvenienceMonoScale, {
 					|
 					bufnum, out = 0, loop = 0, spread = 1, pan = 0, amp = 0.5,
-					attack = 0.01, decay = 0.5, sustain = 0.5, release = 1.0, pos = 0,
+					attack = 0.01, sustain = 0.5, release = 1.0, pos = 0,
 					gate = 1, cutoff = 22e3, bass = 0.0, basefreq=440, freq
 					|
 					var sig, rate, frames, env, file;
@@ -115,7 +112,7 @@ ConvenientCatalog {
 						pos*frames,
 						loop: loop
 					);
-					env = EnvGen.ar(Env.linen(attack, decay, sustain, release), gate);
+					env = EnvGen.ar(Env.linen(attack, sustain, release), gate);
 					FreeSelf.kr(TDelay.kr(Done.kr(env),0.1));
 					sig = LPF.ar(sig, cutoff);
 					sig = sig + (LPF.ar(sig, 100, bass));
@@ -129,7 +126,7 @@ ConvenientCatalog {
 				SynthDef(\ConvenienceStereoScale, {
 					|
 					bufnum, out = 0, loop = 0, spread = 1, pan = 0, amp = 0.5,
-					attack = 0.01, decay = 0.5, sustain = 0.5, release = 1.0, pos = 0,
+					attack = 0.01, sustain = 0.5, release = 1.0, pos = 0,
 					gate = 1, cutoff = 22e3, bass = 0.0, basefreq=440, freq
 					|
 					var sig, rate, frames, env, file;
@@ -143,7 +140,7 @@ ConvenientCatalog {
 						pos*frames,
 						loop: loop
 					);
-					env = EnvGen.ar(Env.linen(attack, decay, sustain, release), gate);
+					env = EnvGen.ar(Env.linen(attack, sustain, release), gate);
 					FreeSelf.kr(TDelay.kr(Done.kr(env),0.1));
 					sig = LPF.ar(sig, cutoff);
 					sig = sig + (LPF.ar(sig, 100, bass));
@@ -163,7 +160,7 @@ ConvenientCatalog {
 					release = 0.01, pos = 0, rate = 1 |
 					var in, chain, env, frames, sig;
 					frames = BufFrames.kr(bufnum);
-					env = EnvGen.ar(Env.linen(attack, decay, sustain, release), gate, doneAction: 2);
+					env = EnvGen.ar(Env.linen(attack, sustain, release), gate, doneAction: 2);
 					in = PlayBuf.ar(1, bufnum, rate * BufRateScale.kr(bufnum), startPos: pos * frames, loop: loop);
 					chain = FFT(LocalBuf(~frame), in);
 					chain = chain.pvcollect(~frame, {| mag, phase, index |
@@ -183,7 +180,7 @@ ConvenientCatalog {
 					var in, chain, env, frames, rate, sig;
 					frames = BufFrames.kr(bufnum);
 					rate = freq/basefreq;
-					env = EnvGen.ar(Env.linen(attack, decay, sustain, release), gate, doneAction: 2);
+					env = EnvGen.ar(Env.linen(attack, sustain, release), gate, doneAction: 2);
 					in = PlayBuf.ar(1, bufnum, rate * BufRateScale.kr(bufnum), startPos: pos * frames, loop: 0);
 					chain = FFT(LocalBuf(~frame), in);
 					chain = chain.pvcollect(~frame, {| mag, phase, index |
@@ -204,7 +201,7 @@ ConvenientCatalog {
 				binRange =#[0, 512], gate = 1, attack = 0.01, decay = 0.01, sustain = 2,
 				release = 0.01, rate = 1 |
 				var sig, chain, env;
-				env = EnvGen.ar(Env.linen(attack, decay, sustain, release), gate, doneAction: 2);
+				env = EnvGen.ar(Env.linen(attack, sustain, release), gate, doneAction: 2);
 				sig = SoundIn.ar(in);
 				chain = FFT(LocalBuf(~frame), sig);
 				chain = chain.pvcollect(~frame, {| mag, phase, index |
@@ -220,23 +217,20 @@ ConvenientCatalog {
 				SynthDef(\ConveniencePitchShift, {
 					|
 					bufnum, out = 0, loop = 0, rate = 1, spread = 1, pan = 0, amp = 0.5,
-					attack = 0.01, decay = 0.5, sustain = 0.5, release = 1.0, pos = 0,
-					pattack = 0.0, pdecay = 0.0, psustain = 1.0, prelease = 100.0,
-					// prelease long hack.. when "penvelope" is not in use, "penvelope" should always be longer than amplitude envelope
+					attack = 0.01, sustain = 0.5, release = 1.0, pos = 0,
 					gate = 1, cutoff = 22e3, bass = 0.0, pitchRatio = 1.0, formantRatio = 1.0
 					|
-					var sig, key, frames, env, penv, file;
-					penv = EnvGen.ar(Env.linen(pattack, pdecay, psustain, prelease), gate);
+					var sig, key, frames, env, file;
 					frames = BufFrames.kr(bufnum);
 					sig = ConvenientBufferPlayer.ar(
 						1,
 						bufnum,
-						rate*BufRateScale.kr(bufnum)*penv,
+						rate*BufRateScale.kr(bufnum),
 						1,
 						pos*frames,
 						loop: loop
 					);
-					env = EnvGen.ar(Env.linen(attack, decay, sustain, release), gate);
+					env = EnvGen.ar(Env.linen(attack, sustain, release), gate);
 					FreeSelf.kr(TDelay.kr(Done.kr(env),0.1));
 					sig = ConvenientPitchShiftPA.ar(
 						sig,
@@ -257,10 +251,8 @@ ConvenientCatalog {
 				SynthDef(\ConveniencePitchShiftScale, {
 					|
 					bufnum, out = 0, loop = 0, spread = 1, pan = 0, amp = 0.5,
-					attack = 0.01, decay = 0.5, sustain = 0.5, release = 1.0, pos = 0,
+					attack = 0.01, sustain = 0.5, release = 1.0, pos = 0,
 					gate = 1, cutoff = 22e3, bass = 0.0, basefreq=440, freq,
-					pattack = 0.0, pdecay = 0.0, psustain = 1.0, prelease = 100.0,
-					// prelease long hack.. when "penvelope" is not in use, "penvelope" should always be longer than amplitude envelope
 					pitchRatio = 1.0, formantRatio = 1.0
 					|
 					var sig, rate, frames, env, file;
@@ -274,7 +266,7 @@ ConvenientCatalog {
 						pos*frames,
 						loop: loop
 					);
-					env = EnvGen.ar(Env.linen(attack, decay, sustain, release), gate);
+					env = EnvGen.ar(Env.linen(attack, sustain, release), gate);
 					FreeSelf.kr(TDelay.kr(Done.kr(env),0.1));
 					sig = ConvenientPitchShiftPA.ar(
 						sig,
