@@ -151,52 +151,29 @@ Convenience {
 	}
 
 	*prParseFolders{ | initpath, depth = 0, server |
-		var initPathDepthCount = 0;
+		var initPathDepthCount = PathName(initpath).fullPath.withTrailingSlash.split(thisProcess.platform.pathSeparator).size;
 
 		//"\n__prParseFolders__".post;
 		//"\n\tinitpath: %".format(initpath).post;
 		//"\n\tdepth: %\n".format(depth).postln;
 
 		server = server ? Server.default;
+		dir = initpath; //update getter
 
-		dir = initpath;
-
-		/*protection against setting an initpath ending with / or // etc,
-		which will break the depth control*/
-		while({initpath.endsWith("/")}, {
-			if(verbosePosts.asBoolean, {"removed /".postln; });
-			initpath = initpath[..initpath.size-2]
-		});
-
-		// count init depth
-		PathName(initpath).pathOnly.do{ | char |
-			if (char == $/, {initPathDepthCount = initPathDepthCount + 1;})
-		};
-		//"initPathDepthCount: %".format(initPathDepthCount).postln;
-
-		// take init depth into account aka how many slashed in initpath
-		depth = depth + initPathDepthCount;
-		//"after init path depth addition/offset, depth is: %".format(depth).postln;
-
-		PathName(initpath).filesDo{ | item |
+		PathName(initpath).deepFiles.do{ | item |
 			var loadFolderFlag;
-			var depthCounter = 0;
 
-			// folder depth control
-			item.pathOnly.do{ | char |
-				// linux      /    windows    \\
-				if (char == ($/) || (char == ($\\)), {
-					if (depthCounter <= depth, {
-						loadFolderFlag = true;
-						depthCounter = depthCounter+1;
-					}, {
-						loadFolderFlag = false;
-					});
-				})
-			};
+			"initDepthCount -> \n\t %".format(initPathDepthCount).postln;
+			"item -> \n\t % \n\t depth -> \n\t\t %".format(item.fullPath, item.fullPath.split(thisProcess.platform.pathSeparator).size).postln;
 
-			//"parser checking: %".format(item.pathOnly).postln;
-			//"after depth control loadFolderFlag is %".format(loadFolderFlag).postln;
+			// depth control -> using 'initPathDepthCount-2' because 0 initiator counting seems more logical
+			//  ie. the depth of the init path is 0
+			// 0 means go into the folder specified and check files (aka no depth). depth 1 means both the init folder and the folder in that. and so on..
+			if(item.fullPath.split(thisProcess.platform.pathSeparator).size-initPathDepthCount-2<=depth, { 
+				loadFolderFlag = true;
+			}, {
+				loadFolderFlag = false;
+			});
 
 			if (loadFolderFlag == true, {
 				var folderKey;
@@ -212,7 +189,6 @@ Convenience {
 					).postln;*/
 				});
 			});
-			//"parser_iteration".postln;
 		};
 
 		//folderPaths.keysDo{ | item |
@@ -291,7 +267,7 @@ Convenience {
 					}, {result = false});
 
 					result;
-				};
+				}; // this func is possibly really prParseFolders' responsibility
 
 				//"files: %".format(files).postln;
 
@@ -452,7 +428,7 @@ Convenience {
 				}, {
 					Error("Convenience::*get::
 					user is asking for folder which is not there,
-					but *get cant find another folder to replace it with").throw;
+					and *get cant find another folder to replace it with").throw;
 					^nil
 				})
 			});
@@ -477,7 +453,7 @@ Convenience {
 	}
 
 	*size {
-		^this.buffers.values.collect{|i|i.size}.sum
+		^this.buffers.values.collect{ | i | i.size}.sum
 	}
 
 	// only think in integers
@@ -504,7 +480,7 @@ Convenience {
 
 	*files {
 		^buffers.keysValuesDo { | folderName, bufferArray |
-			bufferArray.do{| buffer | "% -> %".format(folderName, buffer).postln
+			bufferArray.do{ | buffer | "% -> %".format(folderName, buffer).postln
 			}
 		}
 	}
@@ -551,8 +527,7 @@ Convenience {
 			"name", "type", "out", "folder", "index", "dur", "stretch",
 			"pos", "loop", "rate", "degree", "octave", "root", "scale",
 			"cutoff", "bass", "pan", "spread", "amp", "attack",
-			"decay", "sustain", "release", "tempo", "tuningOnOff",
-			"pattack", "pdecay", "psustain", "prelease",
+			"sustain", "release", "tempo", "tuningOnOff",
 			"basefreq", "fftOnOff", "binRange", "pitchShiftOnOff", "pitchRatio", "formantRatio"
 		]
 	}
@@ -702,39 +677,7 @@ Convenience {
 
 
 
-
-
-// (
-// var initpath= PathName("~/Desktop//////");
-// var depth= 1; // set how deep you want to go
-// var initPathDepthCount= initpath.fullPath.withTrailingSlash.split(thisProcess.platform.pathSeparator).size;
-// ~acceptedItems= Set.new();
-// ~rejectedItems= Set.new();
-// initpath.deepFiles.do{|item|
-// 	if(item.fullPath.split(thisProcess.platform.pathSeparator).size-initPathDepthCount<=depth, {
-// 		~acceptedItems.add(item);
-// 		"accepted\n\t -> %\n".format(item.fileName).postln;
-// 	}, {
-// 		~rejectedItems.add(item);
-// 		"rejected\n\t -> %\n".format(item.fileName).postln;
-// 	});
-// };
-// "number of accepted files %".format(~acceptedItems.size).postln;
-// "number of rejected files %".format(~rejectedItems.size).postln;
-// ~acceptedItems.clear;
-// ~rejectedItems.clear;
-// "".postln;
-// )
-
-
-
-
-
-
-
-
-
-/*play{SinOsc.ar(400, mul: 0.3)!2}
+/*
 
 (
 Pdef(\main, {
