@@ -153,20 +153,24 @@ Convenience {
 	*prParseFolders{ | initpath, depth = 0, server |
 		var initPathDepthCount = PathName(initpath).fullPath.withTrailingSlash.split(thisProcess.platform.pathSeparator).size;
 
-		//"\n__prParseFolders__".post;
-		//"\n\tinitpath: %".format(initpath).post;
-		//"\n\tdepth: %\n".format(depth).postln;
-
 		server = server ? Server.default;
 		dir = initpath; //update getter
+
+		if (verbosePosts, {
+			"initDepthCount -> \n\t %".format(initPathDepthCount).postln;
+			"\n__prParseFolders__".post;
+			"\n\tinitpath: %".format(initpath).post;
+			"\n\tdepth: %\n".format(depth).postln;
+		});
 
 		PathName(initpath).deepFiles.do{ | item |
 			var loadFolderFlag;
 
-			"initDepthCount -> \n\t %".format(initPathDepthCount).postln;
-			"item -> \n\t % \n\t depth -> \n\t\t %".format(item.fullPath, item.fullPath.split(thisProcess.platform.pathSeparator).size).postln;
-
-			// depth control -> using 'initPathDepthCount-2' because 0 initiator counting seems more logical
+			if (verbosePosts, {
+				"item -> \n\t % \n\t depth -> \n\t\t %".format(item.fullPath, item.fullPath.split(thisProcess.platform.pathSeparator).size).postln;
+			});
+			
+			// depth control -> here using 'initPathDepthCount-2' because 0 initiator counting seems more logical
 			//  ie. the depth of the init path is 0
 			// 0 means go into the folder specified and check files (aka no depth). depth 1 means both the init folder and the folder in that. and so on..
 			if(item.fullPath.split(thisProcess.platform.pathSeparator).size-initPathDepthCount-2<=depth, { 
@@ -181,19 +185,16 @@ Convenience {
 				// add to folderPaths if not already present
 				if (folderPaths.includesKey(folderKey).not, {
 					folderPaths.add(folderKey -> item.pathOnly.asSymbol);
-					//"added % to folderPaths".format(folderKey).postln;
+					if(verbosePosts, {"added % to folderPaths".format(folderKey).postln});
 				}, {
 					// folder already added to folderPaths
-					/*"folder % included in folderPaths will not be added again".format(
-					item.pathOnly.asSymbol
-					).postln;*/
+					if (verbosePosts, {"folder % included in folderPaths will not be added again".format(item.pathOnly.asSymbol).postln});
 				});
 			});
 		};
 
-		//folderPaths.keysDo{ | item |
-		//"\n\t__prParseFolders__folderPath: %\n".format(item).postln
-		//};
+		if (verbosePosts, {folderPaths.keysDo{ | item |"\n\t__prParseFolders__folderPath: %\n".format(item).postln}});
+		
 		if (folderPaths.isEmpty, {"\n\tno folders is staged to load\n".postln});
 
 		// stage work for boot up
