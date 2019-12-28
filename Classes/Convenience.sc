@@ -13,27 +13,38 @@ Convenience {
 
 	const <supportedExtensions = #[\wav, \wave, \aif, \aiff, \flac];
 
-	*initClass {
+	*initClass { | server |
+		server = server ? Server.default;
 		buffers = Dictionary.new;
 		folderPaths = Dictionary.new;
 		loadFn = #{ | server | Convenience.prPipeFoldersToLoadFunc(server) };
 		this.prAddEventType;
 		"\nConvenience is possible".postln;
+		if (suggestions, {
+			server.doWhenBooted({
+				this.suggestions
+			})
+		});
+	}
+
+	*suggestions {
+		if (Main.packages.asDict.includesKey(\Else).not, {
+			"\n\tConvenience:: suggests to install the 'Else' Quark".postln;
+		});
+		if (Main.packages.asDict.includesKey(\Utopia).not, {
+			"\n\tConvenience:: suggests to install 'Utopia' Quark (see: BeaconClock)".postln;
+		});
+		"\n\tConvenience:: welcome".postln;
 	}
 
 	*p { | name, type=\Convenience, out = 0, folder, index = 1, dur = 8, stretch = 1.0,
 		pos = 0, loop = 0, rate = 1, degree = 0, octave = 3, root = 0, scale,
 		cutoff = 22e3, bass = 0, pan = 0, spread = 0, amp = 0.5, attack = 0.1,
-		decay = 0.5, sustain=1.0, release = 0.5, tempo, tuningOnOff = 0,
-		pattack = 0.0, pdecay = 0.0, psustain=1.0, prelease = 9e3,
+		sustain=1.0, release = 0.5, tempo, tuningOnOff = 0,
 		basefreq = 440, fftOnOff = 0, binRange = 20, pitchShiftOnOff = 0, pitchRatio = 1.0, formantRatio = 1.0 |
 
 		//var return;
-		// if (suggestions == true, {
-		// 	if (Main.packages.asDict.includesKey(\Else).not, {
-		// 		"\tConvenience:: heavily suggests to install the 'Else' Quark".postln;
-		// 	});
-		// });
+
 
 		if (ConvenientCatalog.synthsBuild, {
 			if(name.isNil,{"needs a key aka name, please".throw; ^nil});
@@ -67,7 +78,6 @@ Convenience {
 			// decide what clock to use
 			// check if Utopia is in Class library
 			if ( Main.packages.asDict.includesKey(\Utopia) == true, {
-				//"\n\tConvenience:: Utopia is possible\n".postln;
 				if (tempo.class == BeaconClock, {
 					// great do nothing
 					//"\ttempo is BeaconClock controlled".postln
@@ -76,9 +86,6 @@ Convenience {
 					//"\tusing tempoclock".postln;
 				})
 			}, {
-				if (suggestions == true, {
-					"\tConvenience:: suggests to install 'Utopia' Quark (see: BeaconClock)".postln;
-				});
 				tempo = TempoClock(tempo);
 			});
 
@@ -98,7 +105,6 @@ Convenience {
 					\pos, pos,
 					\loop, loop,
 					\rate, rate,
-					\pattack, pattack, \pdecay, pdecay, \psustain, psustain, \prelease, prelease,
 					\degree, degree,
 					\octave, octave,
 					\root, root,
@@ -109,7 +115,6 @@ Convenience {
 					\spread, spread,
 					\amp, amp,
 					\attack, attack,
-					\decay, decay,
 					\sustain, sustain,
 					\release, release,
 					\binRange, binRange,
@@ -122,9 +127,8 @@ Convenience {
 		});
 	}
 
-	*s { | name ... args |
+	*s { | name |
 		Pdef(name).stop;
-		"s args in: %".format(args).postln;
 	}
 
 	*crawl { | initpath, depth = 0, server |
@@ -139,7 +143,7 @@ Convenience {
 			// NO WINDOW USAGE
 			// initpath was set when crawl method was called
 			// going directly to parsing!
-			"going directly, no gui".postln;
+			"Convenience:: crawling".postln;
 			this.prParseFolders(initpath, depth, server)
 		});
 
@@ -151,13 +155,23 @@ Convenience {
 	}
 
 	*prParseFolders{ | initpath, depth = 0, server |
-		var initPathDepthCount = PathName(initpath).fullPath.withTrailingSlash.split(thisProcess.platform.pathSeparator).size;
+		//var initPathDepthCount = PathName(initpath).fullPath.withTrailingSlash.split(thisProcess.platform.pathSeparator).size;
+		var initPathDepth;
+		
+		/*protection against setting an initpath ending with / or // etc,
+		which will break the depth control*/
+		while({initpath.endsWith("/")}, {
+			if(verbosePosts.asBoolean, {"removed /".postln; });
+			initpath = initpath[..initpath.size-2]
+		});
 
+		initPathDepth = PathName(initpath).fullPath.split($/).size;
+	
 		server = server ? Server.default;
 		dir = initpath; //update getter
 
 		if (verbosePosts, {
-			"initDepthCount -> \n\t %".format(initPathDepthCount).postln;
+			"initDepthCount -> \n\t %".format(initPathDepth).postln;
 			"\n__prParseFolders__".post;
 			"\n\tinitpath: %".format(initpath).post;
 			"\n\tdepth: %\n".format(depth).postln;
@@ -169,11 +183,11 @@ Convenience {
 			if (verbosePosts, {
 				"item -> \n\t % \n\t depth -> \n\t\t %".format(item.fullPath, item.fullPath.split(thisProcess.platform.pathSeparator).size).postln;
 			});
-			
-			// depth control -> here using 'initPathDepthCount-2' because 0 initiator counting seems more logical
+
+			// depth control -> here using 'initPathDepthCount-1' because 0 initiator counting seems more logical
 			//  ie. the depth of the init path is 0
 			// 0 means go into the folder specified and check files (aka no depth). depth 1 means both the init folder and the folder in that. and so on..
-			if(item.fullPath.split(thisProcess.platform.pathSeparator).size-initPathDepthCount-2<=depth, { 
+			if(item.fullPath.split(thisProcess.platform.pathSeparator).size-initPathDepth-1<=depth, {
 				loadFolderFlag = true;
 			}, {
 				loadFolderFlag = false;
@@ -194,7 +208,7 @@ Convenience {
 		};
 
 		if (verbosePosts, {folderPaths.keysDo{ | item |"\n\t__prParseFolders__folderPath: %\n".format(item).postln}});
-		
+
 		if (folderPaths.isEmpty, {"\n\tno folders is staged to load\n".postln});
 
 		// stage work for boot up
@@ -202,8 +216,8 @@ Convenience {
 		// if server is running create rightaway
 		if (server.serverRunning) {
 			{ // do in routine, for s.sync in *load
-			// the routine should be in *load though.
-			this.prPipeFoldersToLoadFunc(server)
+				// the routine should be in *load though.
+				this.prPipeFoldersToLoadFunc(server)
 			}.fork(AppClock)
 		};
 	}
@@ -242,73 +256,73 @@ Convenience {
 
 
 		//{ // routine -> load files into buffers
-			// check that folderKey does not already exist
-			if (buffers.includesKey(folderKey).not, {
+		// check that folderKey does not already exist
+		if (buffers.includesKey(folderKey).not, {
 
-				// check header only return item if it is supported
-				// files = folder.entries.select { | file |
-				// 	supportedExtensions.includes(file.extension.toLower.asSymbol)
-				// };
+			// check header only return item if it is supported
+			// files = folder.entries.select { | file |
+			// 	supportedExtensions.includes(file.extension.toLower.asSymbol)
+			// };
 
-				files = folder.entries.select { | file |
-					var hiddenFile;
-					var result;
-					// check if file is dot type
-					file.fileName.do{ | char, i |
-						if(char.isPunct and: i == 0, {
-							if(verbosePosts == true, {
-								"found a dot file - avoiding -> %".format(file).postln
-							});
-							hiddenFile = true;
-						})
-					};
-
-					if(hiddenFile.asBoolean.not, {
-						result = supportedExtensions.includes(file.extension.toLower.asSymbol);
-					}, {result = false});
-
-					result;
-				}; // this func is possibly really prParseFolders' responsibility
-
-				//"files: %".format(files).postln;
-
-				loadedBuffers = files.collect { | file |
-					server.sync;
-					working = true;
-					if(verbosePosts.asBoolean,{
-						"reading first channel from\n\t %".format(file.fileName).postln;
-					});
-					Buffer.readChannel(server, file.fullPath;, channels: [0]).normalize(0.99);
+			files = folder.entries.select { | file |
+				var hiddenFile;
+				var result;
+				// check if file is dot type
+				file.fileName.do{ | char, i |
+					if(char.isPunct and: i == 0, {
+						if(verbosePosts == true, {
+							"found a dot file - avoiding -> %".format(file).postln
+						});
+						hiddenFile = true;
+					})
 				};
 
-				if (working == true, {
-					working = false;
-				});
+				if(hiddenFile.asBoolean.not, {
+					result = supportedExtensions.includes(file.extension.toLower.asSymbol);
+				}, {result = false});
 
-				//"\n\t loadedBuffers from folder: % --> %".format(folder.folderName,loadedBuffers).postln;
-				//server.sync; // danger danger only working when used before boot use update here instead?
-				//"loading into memory, hang on".postln;
+				result;
+			}; // this func is possibly really prParseFolders' responsibility
 
-				// add loadedBuffers to dictionary with key from common folder
-				if (loadedBuffers.isEmpty.not, {
-					if (buffers.includesKey(folderKey).not, {
-						if(verbosePosts.asBoolean,{
-							"added new folder as key: %".format(folderKey).postln;
-						});
-						//  add and remove spaces in folder name
-						buffers.add(folderKey -> loadedBuffers);
-						ConvenientListView.update
-					})
-				}, {
-					//"no soundfiles in : %, skipped".format(folder.folderName).postln;
-					// update folderPaths
-					// folderPaths.removeAt(folderKey);
-				});
-			}, {
+			//"files: %".format(files).postln;
+
+			loadedBuffers = files.collect { | file |
+				server.sync;
+				working = true;
 				if(verbosePosts.asBoolean,{
-					"folder % already loaded".format(folderKey).postln
+					"reading first channel from\n\t %".format(file.fileName).postln;
 				});
+				Buffer.readChannel(server, file.fullPath;, channels: [0]).normalize(0.99);
+			};
+
+			if (working == true, {
+				working = false;
 			});
+
+			//"\n\t loadedBuffers from folder: % --> %".format(folder.folderName,loadedBuffers).postln;
+			//server.sync; // danger danger only working when used before boot use update here instead?
+			//"loading into memory, hang on".postln;
+
+			// add loadedBuffers to dictionary with key from common folder
+			if (loadedBuffers.isEmpty.not, {
+				if (buffers.includesKey(folderKey).not, {
+					if(verbosePosts.asBoolean,{
+						"added new folder as key: %".format(folderKey).postln;
+					});
+					//  add and remove spaces in folder name
+					buffers.add(folderKey -> loadedBuffers);
+					ConvenientListView.update
+				})
+			}, {
+				//"no soundfiles in : %, skipped".format(folder.folderName).postln;
+				// update folderPaths
+				// folderPaths.removeAt(folderKey);
+			});
+		}, {
+			if(verbosePosts.asBoolean,{
+				"folder % already loaded".format(folderKey).postln
+			});
+		});
 		//}.fork{AppClock};
 	}
 
@@ -329,7 +343,7 @@ Convenience {
 		}, { // free only specified folder
 			if (buffers.includesKey(folder), {
 				buffers.at(folder).do{ | buffer |
-				if (buffer.isNil.not, {
+					if (buffer.isNil.not, {
 						//"freeing buffer: %".format(buffer).postln;
 						buffer.free;
 					})
@@ -415,8 +429,8 @@ Convenience {
 					folder = Convenience.folders.asArray[0];
 				}, {
 					Error("Conveience::*get::
-					folder is unspecified, which is okay
-					but *get cant find a folder to use").throw;
+folder is unspecified, which is okay
+but *get cant find a folder to use").throw;
 					^nil
 				})
 			});
@@ -428,8 +442,8 @@ Convenience {
 					"*get::replacing with: %".format(folder).postln;
 				}, {
 					Error("Convenience::*get::
-					user is asking for folder which is not there,
-					and *get cant find another folder to replace it with").throw;
+user is asking for folder which is not there,
+and *get cant find another folder to replace it with").throw;
 					^nil
 				})
 			});
@@ -541,20 +555,20 @@ Convenience {
 				var folder = ~folder;
 				var index = ~index;
 				//if (folder.isNil.not) {
-					//var index = ~index ? 0;
+				//var index = ~index ? 0;
 
-					~buffer = Convenience.get(folder, index)
+				~buffer = Convenience.get(folder, index)
 				//} {
 
-					// pair split if folder is nil
-					// var sample = ~sample;
-					// if (sample.isNil.not) {
-					// 	var pair, folder, index;
-					// 	pair = sample.split($:);
-					// 	folder = pair[0].asSymbol;
-					// 	index = if (pair.size == 2) { pair[1].asInt } { 0 };
-					// 	~buffer = Convenience.get(folder, index)
-					// }
+				// pair split if folder is nil
+				// var sample = ~sample;
+				// if (sample.isNil.not) {
+				// 	var pair, folder, index;
+				// 	pair = sample.split($:);
+				// 	folder = pair[0].asSymbol;
+				// 	index = if (pair.size == 2) { pair[1].asInt } { 0 };
+				// 	~buffer = Convenience.get(folder, index)
+				// }
 				//}
 			};
 
@@ -682,43 +696,43 @@ Convenience {
 
 (
 Pdef(\main, {
-	Ppar([
-		Pbindef(\first,
-			\dur, Pseq([Rest(3), 8], inf),
-			\degree, Pseq([5,9], inf)
-		).trace(prefix: '1'),
-		Pbindef(\second,
-			\dur, Pseq([Rest(8), 12], inf),
-			\degree, Pseq([2,3], inf),
-			\octave, 6
-		).trace(prefix: '2'),
-		Pbindef(\third,
-			\dur, Pseq([Rest(15), 20], inf),
-			\degree, Pseq([10,8], inf),
-			\octave, 5
-		).trace(prefix: '3')
-	])
+Ppar([
+Pbindef(\first,
+\dur, Pseq([Rest(3), 8], inf),
+\degree, Pseq([5,9], inf)
+).trace(prefix: '1'),
+Pbindef(\second,
+\dur, Pseq([Rest(8), 12], inf),
+\degree, Pseq([2,3], inf),
+\octave, 6
+).trace(prefix: '2'),
+Pbindef(\third,
+\dur, Pseq([Rest(15), 20], inf),
+\degree, Pseq([10,8], inf),
+\octave, 5
+).trace(prefix: '3')
+])
 }).play
 )
 
 (
 Pdef(\main, {
-	Ppar([
-		Pbindef(\first,
-			\dur, Pseq([Rest(0.5), 8], inf),
-			\degree, Pseq([5,9], inf)
-		).trace(prefix: '1'),
-		Pbindef(\second,
-			\dur, Pseq([Rest(1), 12], inf),
-			\degree, Pseq([2,3], inf),
-			\octave, 6
-		).trace(prefix: '2'),
-		Pbindef(\third,
-			\dur, Pseq([Rest(3), 20], inf),
-			\degree, Pseq([10,8], inf),
-			\octave, 5
-		).trace(prefix: '3')
-	])
+Ppar([
+Pbindef(\first,
+\dur, Pseq([Rest(0.5), 8], inf),
+\degree, Pseq([5,9], inf)
+).trace(prefix: '1'),
+Pbindef(\second,
+\dur, Pseq([Rest(1), 12], inf),
+\degree, Pseq([2,3], inf),
+\octave, 6
+).trace(prefix: '2'),
+Pbindef(\third,
+\dur, Pseq([Rest(3), 20], inf),
+\degree, Pseq([10,8], inf),
+\octave, 5
+).trace(prefix: '3')
+])
 }).play
 )
 
