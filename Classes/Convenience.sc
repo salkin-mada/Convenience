@@ -143,7 +143,6 @@ Convenience {
 			// NO WINDOW USAGE
 			// initpath was set when crawl method was called
 			// going directly to parsing!
-			"Convenience:: crawling".postln;
 			this.prParseFolders(initpath, depth, server)
 		});
 
@@ -156,7 +155,7 @@ Convenience {
 
 	*prParseFolders{ | initpath, depth = 0, server |
 		//var initPathDepthCount = PathName(initpath).fullPath.withTrailingSlash.split(thisProcess.platform.pathSeparator).size;
-		var initPathDepth;
+		var initPathDepth, anythingFound;
 		
 		/*protection against setting an initpath ending with / or // etc,
 		which will break the depth control*/
@@ -184,11 +183,15 @@ Convenience {
 				"item -> \n\t % \n\t depth -> \n\t\t %".format(item.fullPath, item.fullPath.split(thisProcess.platform.pathSeparator).size).postln;
 			});
 
-			// depth control -> here using 'initPathDepthCount-1' because 0 initiator counting seems more logical
-			//  ie. the depth of the init path is 0
-			// 0 means go into the folder specified and check files (aka no depth). depth 1 means both the init folder and the folder in that. and so on..
+			/*
+			depth control -> here using 'initPathDepthCount-1' because 0 initiator counting seems more logical
+			ie. the depth of the init path is 0
+			0 means go into the folder specified and check files (aka no depth).
+			depth 1 means both the init folder and the folder in that. and so on..
+			*/
 			if(item.fullPath.split(thisProcess.platform.pathSeparator).size-initPathDepth-1<=depth, {
 				loadFolderFlag = true;
+				anythingFound = true;
 			}, {
 				loadFolderFlag = false;
 			});
@@ -209,7 +212,7 @@ Convenience {
 
 		if (verbosePosts, {folderPaths.keysDo{ | item |"\n\t__prParseFolders__folderPath: %\n".format(item).postln}});
 
-		if (folderPaths.isEmpty, {"\n\tno folders is staged to load\n".postln});
+		if (anythingFound.asBoolean.not, {"\n\tno folders is staged to load\n".postln});
 
 		// stage work for boot up
 		ServerBoot.add(loadFn, server);
@@ -223,17 +226,35 @@ Convenience {
 	}
 
 	*prPipeFoldersToLoadFunc{ | server |
+		var news = false;
+
+		folderPaths.keysValuesDo{ | key |
+			if (buffers.includesKey(key).not, {news = true});
+		};
 
 		/*folderPaths.keysDo{|item|
 		"\n\n\t***prPipeFoldersToLoadFunc**\nfolderPath: %\n".format(item).postln
 		};*/
 
 		if (folderPaths.isEmpty.not,{
-			"crawl::: piping directory and loading buffers".postln;
-			folderPaths.keysValuesDo{ | key, path |
-				this.load(path.asString, server);
-			};
-			"crawl::: done piping and loading".postln;
+			
+			if (news,{
+				folderPaths.keysValuesDo{ | key, path |
+					if (buffers.includesKey(key).not,{
+						"\nConvenience::crawl -> piping % and loading buffers".format(key).postln;
+						this.load(path.asString, server);
+						"Convenience::crawl -> done piping and loading %".format(key).postln;
+
+					}, {
+						if (verbosePosts, {"Convenience::crawl -> nothing new to %".format(key).postln})
+					})
+				};
+
+			}, {
+				"Convenience::crawl -> no new folders found".postln;
+			});
+			
+			
 			// update folderPaths to be even with loaded buffers
 			folderPaths.keysDo{ | key |
 				//key.postln;
@@ -244,7 +265,7 @@ Convenience {
 				}
 			)};
 
-		}, {"crawler did not find any wav/aiff files".postln;});
+		}, {"crawler did not find any wav/aif/flac files".postln;});
 	}
 
 	*load { | path, server |
