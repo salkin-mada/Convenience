@@ -9,6 +9,8 @@ Convenience {
 	classvar loadFn;
 	classvar listWindow;
 
+	classvar sleet;
+
 	classvar working = false;
 
 	const <supportedExtensions = #[\wav, \wave, \aif, \aiff, \flac];
@@ -37,15 +39,91 @@ Convenience {
 		"\n\tConvenience:: welcome".postln;
 	}
 
-	*p { | name, type=\Convenience, out = 0, folder, index = 1, dur = 8, stretch = 1.0,
+	*properties {
+		^[
+			'name' -> \nil,
+			'type' -> \Convenience,
+			'out' -> 0,
+			'folder' -> \nil,
+			'index' -> 1, 
+			'dur' -> 4,
+			'stretch' -> 1.0,
+			'pos' -> 0,
+			'loop' -> 0,
+			'rate' -> 1, 
+			'degree' -> 0,
+			'octave' -> 4,
+			'root' -> 0,
+			'scale' -> \nil,
+			'cutoff' -> 22e3,
+			'bass' -> 0,
+			'pan' -> 0,
+			'spread' -> 0, 
+			'amp' -> 0.5,
+			'attack' -> 0.01,
+			'sustain' -> 1.0,
+			'release' -> 0.5,
+			'tempo' -> \nil,
+			'tuningOnOff' -> 1,
+			'basefreq' -> 440,
+			'fftOnOff' -> 0,
+			'binRange' -> 20,
+			'pitchShiftOnOff' -> 0, 
+			'pitchRatio' -> 1.0,
+			'formantRatio' -> 1.0
+		]
+	}
+
+	*p {| name, type=\Convenience, out = 0, folder, index = 1, dur = 8, stretch = 1.0,
 		pos = 0, loop = 0, rate = 1, degree = 0, octave = 3, root = 0, scale,
-		cutoff = 22e3, bass = 0, pan = 0, spread = 0, amp = 0.5, attack = 0.1,
+		cutoff = 22e3, bass = 0, pan = 0, spread = 0, amp = 0.5, attack = 0.01,
 		sustain=1.0, release = 0.5, tempo, tuningOnOff = 0,
 		basefreq = 440, fftOnOff = 0, binRange = 20, pitchShiftOnOff = 0, pitchRatio = 1.0, formantRatio = 1.0 |
 
-		//var return;
+		var properties, pdefnProperties = List.new;
 
+		properties = Dictionary.with(*this.properties.collect{arg item; item});
+		
+		// muligvis noget isNil.not stuff her, i et forsøg på value centralisering...
+		properties.keysValuesChange { | key, value |
+			switch(key)
+			{\name}{name}
+			{\type}{type}
+			{\out}{out}
+			{\folder}{folder}
+			{\index} {index}
+			{\dur} {dur}
+			{\stretch} {stretch}
+			{\pos} {pos}
+			{\loop} {loop}
+			{\rate} {rate}
+			{\degree} {degree}
+			{\octave} {octave}
+			{\root} {root}
+			{\scale} {scale}
+			{\cutoff} {cutoff}
+			{\bass} {bass}
+			{\pan} {pan}
+			{\spread} {spread}
+			{\amp} {amp}
+			{\attack} {attack}
+			{\sustain} {sustain}
+			{\release} {release}
+			{\tempo} {tempo}
+			{\tuningOnOff} {tuningOnOff}
+			{\basefreq} {basefreq}
+			{\fftOnOff} {fftOnOff}
+			{\binRange} {binRange}
+			{\pitchShiftOnOff} {pitchShiftOnOff}
+			{\pitchRatio} {pitchRatio}
+		};
 
+		properties.keysDo{ | key |
+			if (((key == \name) or: (key == \tempo)).not, {
+				pdefnProperties.add(key)
+			})
+		};
+		
 		if (ConvenientCatalog.synthsBuild, {
 			if(name.isNil,{"needs a key aka name, please".throw; ^nil});
 
@@ -55,9 +133,10 @@ Convenience {
 			if (folder.isNil, {
 				if(Convenience.folders.asArray[0].isNil.not, {
 					folder = Convenience.folders.asArray[0];
-					//"choosing first bufferGroup".postln;
-				}, {Error("Conveience:: no buffers available").throw; ^nil})
+				}, {Error("Convenience:: no buffers available").throw; ^nil})
 			});
+
+			// note note note note
 			// if queried folder does not exist
 			// if (folder.isKindOf(Pattern).not, { // <-- not good, should be dynamic dispatched?
 			// 	// polymorphic.. feelings.
@@ -89,46 +168,40 @@ Convenience {
 				tempo = TempoClock(tempo);
 			});
 
+			pdefnProperties = pdefnProperties.collect{ | key | 
+				var pdefn;
+				switch(key)
+				{\type} {[key.asSymbol, type]}
+				{\scale} {[key.asSymbol, scale]}
+				{
+					pdefn = Pdefn((name.asString++"_"++key.asString).asSymbol, properties.at(key));
+					[key.asSymbol, pdefn]
+				}
+			};
 
 			Pdef(name,
-				Pbind(
-					\type, type,
-					\fftOnOff, fftOnOff,
-					\pitchShiftOnOff, pitchShiftOnOff,
-					\tuningOnOff, tuningOnOff,
-					\basefreq, basefreq,
-					\out, out,
-					\folder, folder,
-					\index, index,
-					\dur, dur,
-					\stretch, stretch,
-					\pos, pos,
-					\loop, loop,
-					\rate, rate,
-					\degree, degree,
-					\octave, octave,
-					\root, root,
-					\scale, scale,
-					\cutoff, cutoff,
-					\bass, bass,
-					\pan, pan,
-					\spread, spread,
-					\amp, amp,
-					\attack, attack,
-					\sustain, sustain,
-					\release, release,
-					\binRange, binRange,
-					\pitchRatio, pitchRatio,
-					\formantRatio, formantRatio
-				);
-			).play(tempo);
+				Pbind().patternpairs_(pdefnProperties.collect{ | pair | 
+					pair;
+				}.flat)
+			)/* .play(tempo) */;
+
+
+			
+			if ((Ndef(name).isPlaying).not, {
+				Ndef(name).source = Pdef(name);
+				//Ndef(name).playN(out)
+				Ndef(name).play
+			});
+
 		}, {
 			"Convenience:: synths not added".postln;
 		});
 	}
 
 	*s { | name |
-		Pdef(name).stop;
+		//Pdef(name).stop;
+		/* Ndef(name).fadeTime_(2); */
+		Ndef(name).stop;
 	}
 
 	*crawl { | initpath, depth = 0, server |
@@ -251,7 +324,7 @@ Convenience {
 				};
 
 			}, {
-				"Convenience::crawl -> no new folders found".postln;
+				"Convenience::crawl -> new folders not found".postln;
 			});
 			
 			
@@ -450,8 +523,8 @@ Convenience {
 					folder = Convenience.folders.asArray[0];
 				}, {
 					Error("Conveience::*get::
-folder is unspecified, which is okay
-but *get cant find a folder to use").throw;
+					folder is unspecified, which is okay
+					but *get cant find a folder to use").throw;
 					^nil
 				})
 			});
@@ -463,8 +536,8 @@ but *get cant find a folder to use").throw;
 					"*get::replacing with: %".format(folder).postln;
 				}, {
 					Error("Convenience::*get::
-user is asking for folder which is not there,
-and *get cant find another folder to replace it with").throw;
+					user is asking for folder which is not there,
+					and *get cant find another folder to replace it with").throw;
 					^nil
 				})
 			});
@@ -556,16 +629,6 @@ and *get cant find another folder to replace it with").throw;
 		// ^buffers.keys.collect { | keys |
 		// 	keys;
 		// }.asArray;
-	}
-
-	*properties {
-		^[
-			"name", "type", "out", "folder", "index", "dur", "stretch",
-			"pos", "loop", "rate", "degree", "octave", "root", "scale",
-			"cutoff", "bass", "pan", "spread", "amp", "attack",
-			"sustain", "release", "tempo", "tuningOnOff",
-			"basefreq", "fftOnOff", "binRange", "pitchShiftOnOff", "pitchRatio", "formantRatio"
-		]
 	}
 
 	*prAddEventType {
@@ -691,21 +754,94 @@ and *get cant find another folder to replace it with").throw;
 		^result
 	}
 
-	*modul { | name = \ConvenientSynthGraph, busnum, numLayers = 10, out |
-		if(busnum.isNil.not, {
-			ConvenientCatalog.prSynthGraph(name, busnum, numLayers, out)
-		}, {"no busnum(s) specified".postln})
+	*tempo { | name, from, to, secs = 0 |
+
 	}
 
-	*lfos { | numLFOs = 10, freq = 0.1 |
-		ConvenientCatalog.numLFOs_(numLFOs);
-		ConvenientCatalog.prMakeLFOs(freq);
+	// thanks Mads for the wonderful Convenience of Sleet
+	*fxs {
+		if (sleet.isNil, {
+			sleet = Sleet.new(2);
+		})
+		^sleet.list.keys;
 	}
 
-	*map { | target = \ConvenientSynthGraph, prob = 0.75 |
-		ConvenientCatalog.prMapLFOs(target, prob);
+	*pfx { | name, fxs, out = #[0,1], server ...args |
+		var fxList, chainSize;
+
+		server = server ? Server.default;
+
+		fxList = Array.with(*fxs);
+		chainSize = fxList.size;
+
+		//"fxs: %".format(fxList).postln;
+
+		//args.do{arg i; i.asSymbol.postln};
+
+		if ((chainSize > 0) and: name.isNil.not, {
+			
+		
+			// if pdef with same name exist do beneath !
+			
+			if (sleet.isNil, {
+				sleet = Sleet.new(2);
+			});
+
+			/* if (Ndef(name).isPlaying.not, {
+				Ndef(name).source = Pdef(name);
+				Ndef(name).playN(out)
+			}); */
+
+			//"chainSize: %".format(chainSize).postln;
+			
+			chainSize.do{ | i |
+						///// not working value.calss,.  how to get fx key??? hmm..
+				//if ((Ndef((name.asString).asSymbol)[i+1].value.class == fxs[i]).not, {
+
+					// important to iterate from 1
+					// first fx should not be Ndef(\name)[0]
+					Ndef(name)[i+1] = \filter -> sleet.get(fxList[i].asSymbol);
+				
+				//})
+			};
+
+			// last chain entry is control
+			Ndef(name)[chainSize+1] = \set -> Pbind(
+				\dur, Pdefn((name++"_dur").asSymbol),
+				// here we need args to arrive in some fancy way
+
+				*args
+				/* \wet1, 0.5,//args.at(\wet1),
+				//\amp1, 0.9,
+				\wet2, 0.5,
+				//\amp2, 0.9,
+				\wet3, 0.5,
+				//\amp3, 0.9,
+				\wet4, 0.5,
+				//\amp4, 0.9 */
+			);
+
+			^Ndef(name);
+		}, {
+			"Convenience:: pfx needs a name and an array of fx keys".postln;
+		})
 	}
 
+	*gpp { | pattrname, parameter|
+        if ((pattrname.isNil and: parameter.isNil).not, {
+			if (Pdef.all.includesKey(pattrname.asSymbol), {
+				if (this.properties.asDict.includesKey(parameter.asSymbol), {
+		            ^Pdefn((pattrname.asString++"_"++parameter.asString).asSymbol)
+				}, {
+					"Convenience:: gpp -> param does not exist".postln
+				})
+			}, {
+				"Convenience:: gpp -> p pattrname does not exist".postln
+			})
+        }, {
+			"Convenience:: gpp -> needs a pattrname and param".postln
+		})
+    }
 
 }
 

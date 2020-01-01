@@ -298,13 +298,7 @@ ConvenientCatalog {
 		});
 	}
 
-	*prModules { | numchans = 2 |
-		/*
-		All fx parameters are normalized in a bipolar fashion, 
-		meaning all parameters expect signals of -1.0 to 1.0 (standard for most ugens)
-		*/
-        // thanks to Mads
-		// Effect functions
+/* 	*prModules { | numchans = 2 |
 		modules = (
 			comb: {|in, delay=0.25, decay=1|
 				CombC.ar(
@@ -527,7 +521,7 @@ ConvenientCatalog {
 
     *prMapLFOs { | target, prob |
 
-        if(Ndef(target).isPlaying /*.loaded not working*/, {
+        if(Ndef(target).isPlaying, {
                 
             if(lfosLoaded == true, {
                 Ndef(target).controlNames.do{ | ctrl |
@@ -548,7 +542,7 @@ ConvenientCatalog {
                 }
             })       
         }, {"target does not exist".postln})
-    }
+    } */
 }
 
 // These following Ugens is used with the biggest thanks to it originators
