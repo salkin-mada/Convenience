@@ -2,7 +2,7 @@ Convenience {
 	// user config
 	classvar loadSynths = true; // should crawler auto load synths
 	classvar verbosePosts = false; // debug or interest
-	classvar suggestions = true; // you want some?
+	classvar suggestions = false; // you want some?
 	classvar <>numFxChannels = 2;
 
 	// private config
@@ -44,8 +44,8 @@ Convenience {
 		^[
 			'name' -> \nil,
 			'numChannels' -> 2,
+			'spatProxy' -> \nil,
 			'type' -> \Convenience,
-			'out' -> 0,
 			'folder' -> \nil,
 			'index' -> 1,
 			'dur' -> 4,
@@ -78,7 +78,7 @@ Convenience {
 		]
 	}
 
-	*p { | name, bus = 0, numChannels = 2, type=\Convenience, out = 0, folder, index = 1, dur = 4, stretch = 1.0,
+	*p { | name, spatProxy, numChannels = 2, type=\Convenience, folder, index = 1, dur = 4, stretch = 1.0,
 		pos = 0, loop = 0, rate = 1, degree = 0, octave = 3, root = 0, scale,
 		cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0, pan = 0,
 		width = 2.0, spread = 0.5, amp = 0.5, attack = 0.01,
@@ -128,9 +128,9 @@ Convenience {
 		properties.keysValuesChange { | key, value |
 			switch(key)
 			{\name}{name}
+			{\spatProxy}{spatProxy}
 			{\numChannels}{numChannels}
 			{\type}{type}
-			{\out}{out}
 			{\folder}{folder}
 			{\index} {index}
 			{\dur} {dur}
@@ -161,14 +161,10 @@ Convenience {
 		};
 
 		properties.keysDo{ | key |
-			if (((key == \name) or: (key == \tempo)).not, {
+			if (((key == \name) or: (key == \tempo) or: (key == \spatProxy)).not, {
 				pdefnProperties.add(key)
 			})
 		};
-
-		
-
-			
 
 			// decide what clock to use
 			// check if Utopia is in Class library
@@ -208,16 +204,18 @@ Convenience {
 			if ((Ndef(name).isPlaying).not, {
 				Ndef(name).source = Pdef(name);
 				Ndef(name).reshaping = \elastic;
-				//Ndef(name).playN(out)
-				//Ndef(name).play(out: bus, numChannels: numChannels).mold(numChannels)
-				Ndef(name).mold(numChannels).play(out: bus);
+				Ndef(name).mold(numChannels);
+				Ndef(name).playSpat(spatProxyPath: spatProxy.asSymbol);
 			}, {
-				if((numChannels == Ndef(name).numChannels).not or: (bus == Ndef(name).bus.index).not, {
-					//Ndef(name).play(out: bus, numChannels: numChannels).mold(numChannels)
-					Ndef(name).mold(numChannels).play(out: bus);
+				if((numChannels == Ndef(name).numChannels).not, {
+					Ndef(name).mold(numChannels);
 				});
-				/* if((bus == Ndef(name).outputBusSOMETHING==???).not, {
-					Ndef(name).play(out: bus, numChannels: numChannels).mold(numChannels)
+				/* //hmm how to update - > get index from playSpat
+				// hmm how to update spatProxyPath, how to get out/bus index from spatProxy=?
+				//(bus == Ndef(name).bus.index).not
+				if((spatProxy.asSymbol == Ndef(name).spatProxy.asSymbol).not, {
+					Ndef(name).mold(numChannels);
+					Ndef(name).playSpat(spatProxyPath: spatProxy.asSymbol);
 				}); */
 			});
 
@@ -235,6 +233,10 @@ Convenience {
 			"Convenience:: .s not a running pattern".postln
 		})
 
+	}
+
+	*ss { | name, spatProxy ...args |
+		Ndef(name).stopSpat(spatProxy.asSymbol);
 	}
 
 	*sall { | fadeTime = 1 |
@@ -260,10 +262,10 @@ Convenience {
 		if (ConvenientCatalog.fxsynthsBuild.not, {
 			ConvenientCatalog.addFxs(numFxChannels);
 		});
-		^ConvenientCatalog.getFx(fxname.asSymbol).argNames.collect{arg name; if ((name == 'in').not, {name})}.reject({arg item; item.isNil});
+		^ConvenientCatalog.getFx(fxname.asSymbol).argNames.reject(_ == 'in');
 	}
 
-	*pfx { | name, fxs /*, out = #[0,1],  server*/ ...args |
+	*pfx { | name, fxs ...args |
 		var fxList, chainSize;
 
 		//server = server ? Server.default;
@@ -281,11 +283,11 @@ Convenience {
 			ConvenientCatalog.addFxs(numFxChannels);
 			});
 
-			if (Ndef(name).isPlaying.not, {
-				Ndef(name).source = Pdef(name);
-				Ndef(name).reshaping = \elastic;
-				Ndef(name).play
-			});
+			// if (Ndef(name).isPlaying.not, {
+			// 	Ndef(name).source = Pdef(name);
+			// 	Ndef(name).reshaping = \elastic;
+			// 	Ndef(name).play
+			// });
 
 
 

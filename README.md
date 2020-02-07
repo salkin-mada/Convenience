@@ -1,7 +1,11 @@
-# Convenience
+# Convenience for Verdensteatret's Max 8 Package (VTMax)
 Convenience is many things but first and foremost it is convenient for me.
 
 But if you like to **ease** - read on.
+
+This branch is a special VTMax version utilizing the Busplug Extension methods for SpatProxy's!
+
+Very convenient indeed.
 
 ![example](images/crawling_trees.png "tree'n crawl")
 
