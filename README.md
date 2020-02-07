@@ -89,13 +89,13 @@ z.crawl(Platform.resourceDir +/+ "sounds", depth: 0)
 z.list // get some info of what went down
 
 //minimum
-z.p(\lay); // play at the beginning of first file in first folder
+z.p(\lay, '/myScene/spatProxy.1'); // play at the beginning of first file in first folder at the allocated outputs given from spatProxy (allocator)
 z.s(\lay); // stop
 
 // play
 z.p(
     \lay,
-    tempo: 8.0,
+    '/myScene/spatProxy.1',
     folder: \sounds,
     index: Prand([1,2,3], inf),
     pos: Pwhite(0.2,0.7),
@@ -107,6 +107,33 @@ z.p(
 
 // slay
 z.s(\lay)
+
+z.sall // stop all Convenience patterns
+
+// play pattern and create spatProxy connection
+z.p(\spat1, '/myScene/spatProxy.1', index: 15, dur: 0.5, pos: Psinen(0.1))
+z.p(\spat2, '/myScene/spatProxy.2', index: 15, dur: 0.65, pos: Psinen(0.1), rate: 2.0)
+z.p(\spat3, '/myScene/spatProxy.3', index: 3, dur: 0.65, pos: Psinen(0.1), rate: 1.0)
+z.p(\spat4, '/glemsel/yo.1', index: 22, dur: 0.65, pos: Psinen(0.1), rate: 1.0)
+z.p(\spat5, '/hurski/cirkus.3', index: 17, dur: 2.35, pos: Psinen(0.1), rate: 1.0)
+z.p(\spat6, '/orange/friskModd.42', index: 12, dur: 0.95, pos: Psinen(0.1), rate: 1.0/2)
+
+// stop pattern
+z.s(\spat1);
+z.s(\spat2);
+z.s(\spat3);
+z.s(\spat4);
+z.s(\spat5);
+z.s(\spat6);
+
+( // remove spatProxy connection
+z.ss(\spat1, '/myScene/spatProxy.1');
+z.ss(\spat2, '/myScene/spatProxy.2');
+z.ss(\spat3, '/myScene/spatProxy.3');
+z.ss(\spat4, '/glemsel/yo.1');
+z.ss(\spat5, '/hurski/cirkus.3');
+z.ss(\spat6, '/orange/friskModd.42');
+)
 ```
 Convenience.p outputs stereo, 2 channels, but can be sequenced to whatever output pair you like.
 For more info about `.p` arguments check the `convenience_guide.scd` in /Convenience/usage or simply check the helpfile, `ctrl+d` / `cmd+d` depending on your OS.
