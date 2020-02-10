@@ -3,7 +3,7 @@ Convenience {
 	classvar loadSynths = true; // should crawler auto load synths
 	classvar verbosePosts = false; // debug or interest
 	classvar suggestions = true; // you want some?
-	classvar <>numFxChannels = 2;
+	classvar <>numFxChannels = 2; // default number of fx channels
 
 	// private config
 	classvar <dir, <buffers, <folderPaths, <patterns;
@@ -83,7 +83,7 @@ Convenience {
 		cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0, pan = 0,
 		width = 2.0, spread = 0.5, amp = 0.5, attack = 0.01,
 		sustain=1.0, release = 0.5, tempo, tuningOnOff = 0,
-		basefreq = 440, pitchShiftOnOff = 0, pitchRatio = 1.0, formantRatio = 1.0 |
+		basefreq = 440, pitchShiftOnOff = 0, pitchRatio = 1.0, formantRatio = 1.0 ...args |
 
 		var properties, pdefnProperties = List.new;
 
@@ -115,60 +115,56 @@ Convenience {
 			// }, { /*folder received a pattern*/ });
 
 
-		// add to Convenience pattern set reference
-		patterns.add(name.asSymbol);
-		tmpName = name.asSymbol; // temporary name holder
+			// add to Convenience pattern set reference
+			patterns.add(name.asSymbol);
+			tmpName = name.asSymbol; // temporary name holder
 
-		// if scale is not set choose classic chromatic
-		if(scale.isNil, {
-			scale = Scale.chromatic;
-		});
+			// if scale is not set choose classic chromatic
+			if(scale.isNil, {
+				scale = Scale.chromatic;
+			});
 
-		// muligvis noget isNil.not stuff må til her, i et forsøg på value centralisering...
-		properties.keysValuesChange { | key, value |
-			switch(key)
-			{\name}{name}
-			{\numChannels}{numChannels}
-			{\type}{type}
-			{\out}{out}
-			{\folder}{folder}
-			{\index} {index}
-			{\dur} {dur}
-			{\stretch} {stretch}
-			{\pos} {pos}
-			{\loop} {loop}
-			{\rate} {rate}
-			{\degree} {degree}
-			{\octave} {octave}
-			{\root} {root}
-			{\scale} {scale}
-			{\cutoff} {cutoff}
-			{\res} {res}
-			{\fgain} {fgain}
-			{\ftype} {ftype}
-			{\bass} {bass}
-			{\pan} {pan}
-			{\width} {width}
-			{\amp} {amp}
-			{\attack} {attack}
-			{\sustain} {sustain}
-			{\release} {release}
-			{\tempo} {tempo}
-			{\tuningOnOff} {tuningOnOff}
-			{\basefreq} {basefreq}
-			{\pitchShiftOnOff} {pitchShiftOnOff}
-			{\pitchRatio} {pitchRatio}
-		};
+			// muligvis noget isNil.not stuff må til her, i et forsøg på value centralisering...
+			properties.keysValuesChange { | key, value |
+				switch(key)
+				{\name}{name}
+				{\numChannels}{numChannels}
+				{\type}{type}
+				{\out}{out}
+				{\folder}{folder}
+				{\index} {index}
+				{\dur} {dur}
+				{\stretch} {stretch}
+				{\pos} {pos}
+				{\loop} {loop}
+				{\rate} {rate}
+				{\degree} {degree}
+				{\octave} {octave}
+				{\root} {root}
+				{\scale} {scale}
+				{\cutoff} {cutoff}
+				{\res} {res}
+				{\fgain} {fgain}
+				{\ftype} {ftype}
+				{\bass} {bass}
+				{\pan} {pan}
+				{\width} {width}
+				{\amp} {amp}
+				{\attack} {attack}
+				{\sustain} {sustain}
+				{\release} {release}
+				{\tempo} {tempo}
+				{\tuningOnOff} {tuningOnOff}
+				{\basefreq} {basefreq}
+				{\pitchShiftOnOff} {pitchShiftOnOff}
+				{\pitchRatio} {pitchRatio}
+			};
 
-		properties.keysDo{ | key |
-			if (((key == \name) or: (key == \tempo)).not, {
-				pdefnProperties.add(key)
-			})
-		};
-
-		
-
-			
+			properties.keysDo{ | key |
+				if (((key == \name) or: (key == \tempo)).not, {
+					pdefnProperties.add(key)
+				})
+			};
 
 			// decide what clock to use
 			// check if Utopia is in Class library
@@ -190,8 +186,8 @@ Convenience {
 				//{\type} {[key.asSymbol, type]}
 				//{\scale} {[key.asSymbol, scale]}
 				//{
-					pdefn = Pdefn((name.asString++"_"++key.asString).asSymbol, properties.at(key)).pattern;
-					[key.asSymbol, pdefn]
+				pdefn = Pdefn((name.asString++"_"++key.asString).asSymbol, properties.at(key)).pattern;
+				[key.asSymbol, pdefn]
 				//}
 			};
 
@@ -217,10 +213,10 @@ Convenience {
 					Ndef(name).mold(numChannels).play(out: bus);
 				});
 				/* if((bus == Ndef(name).outputBusSOMETHING==???).not, {
-					Ndef(name).play(out: bus, numChannels: numChannels).mold(numChannels)
+				Ndef(name).play(out: bus, numChannels: numChannels).mold(numChannels)
 				}); */
 			});
-
+			^Pdef(name);
 		}, {
 			"Convenience:: synths not added".postln;
 		});
@@ -245,22 +241,41 @@ Convenience {
 		}
 	}
 
+	*clear { | name ...args |
+		if (name.isNil.not, {
+			Ndef(name).source.clear; // aka Pdef(name).stop
+			Ndef(name).free;
+			Ndef(name).clear;
+			if (patterns.includes(name.asSymbol), {
+				patterns.remove(name.asSymbol);
+			});
+		}, {
+			"Convenience:: .s not a running pattern".postln
+		})
+
+	}
+
+	*clearAll { | name ...args |
+		patterns.do{arg name;
+			Ndef(name.asSymbol).source.clear;
+			Ndef(name.asSymbol).free;
+			Ndef(name.asSymbol).clear;
+			patterns.remove(name.asSymbol);
+		}
+	}
+
 	*tempo { | name, from, to, secs = 0 |
 
 	}
 
 	*fxs {
-		if (ConvenientCatalog.fxsynthsBuild.not, {
-			ConvenientCatalog.addFxs(numFxChannels);
-		});
+		this.addFxSynths(numFxChannels);
 		^ConvenientCatalog.fxmodules;
 	}
 
 	*fxargs { | fxname |
-		if (ConvenientCatalog.fxsynthsBuild.not, {
-			ConvenientCatalog.addFxs(numFxChannels);
-		});
-		^ConvenientCatalog.getFx(fxname.asSymbol).argNames.collect{arg name; if ((name == 'in').not, {name})}.reject({arg item; item.isNil});
+		this.addFxSynths(numFxChannels);
+		^ConvenientCatalog.getFx(fxname.asSymbol).argNames.reject(_ == 'in');
 	}
 
 	*pfx { | name, fxs /*, out = #[0,1],  server*/ ...args |
@@ -275,11 +290,13 @@ Convenience {
 		//"fxs: %".format(fxList).postln;
 		//args.do{arg i; i.asSymbol.postln};
 
-		if ((chainSize > 0) and: name.isNil.not, {
+		if ((chainSize > 0) and: name.isNil.not and: fxs.isNil.not, {
 
-			if (ConvenientCatalog.fxsynthsBuild.not, {
-			ConvenientCatalog.addFxs(numFxChannels);
-			});
+			// only if a .p has been made
+			//if (patterns.includes(name.asSymbol), {
+
+			this.addFxSynths(numFxChannels);
+
 
 			if (Ndef(name).isPlaying.not, {
 				Ndef(name).source = Pdef(name);
@@ -290,8 +307,8 @@ Convenience {
 
 
 			/* if (Ndef(name).isPlaying.not, {
-				Ndef(name).source = Pdef(name);
-				Ndef(name).playN(out)
+			Ndef(name).source = Pdef(name);
+			Ndef(name).playN(out)
 			}); */
 
 			//"chainSize: %".format(chainSize).postln;
@@ -299,16 +316,16 @@ Convenience {
 			chainSize.do{ | i |
 				///// not working value.calss,.  how to get fx key??? hmm..
 				//if ((Ndef((name.asString).asSymbol)[i+1].value.class == fxs[i]).not, {
-					//fxList[i].postln;
+				//fxList[i].postln;
 
 
-					if (ConvenientCatalog.fxlist.includesKey(fxList[i].asSymbol), {
-						// important to iterate from 1
-						// first fx should not be Ndef(\name)[0]
-						Ndef(name)[i+1] = \filter -> ConvenientCatalog.getFx(fxList[i].asSymbol);
-					}, {
-						"Convenience:: fx: % does not exist".format(fxList[i]).postln
-					})
+				if (ConvenientCatalog.fxlist.includesKey(fxList[i].asSymbol), {
+					// important to iterate from 1
+					// first fx should not be Ndef(\name)[0]
+					Ndef(name)[i+1] = \filter -> ConvenientCatalog.getFx(fxList[i].asSymbol);
+				}, {
+					"Convenience:: fx: % does not exist".format(fxList[i]).postln
+				})
 				//})
 			};
 
@@ -324,20 +341,23 @@ Convenience {
 				*args
 			);
 
-			//^Ndef(name);
+			//});
+
+
 		}, {
-			if (chainSize > 0, {
+			// if (chainSize > 0, {
+			// 	"Convenience:: pfx needs a name".postln;
+			// }, {
+			// 	"Convenience:: pfx needs an array of fx keys".postln;
 
-			}, {
-				"Convenience:: pfx needs an array of fx keys".postln;
-
-			});
-			"Convenience:: pfx needs a name and an array of fx keys".postln;
+			// });
+			//"Convenience:: pfx needs a name and an array of fx keys".postln;
 		})
+		^Ndef(name);
 	}
 
 	*pp { | pattrname, parameter, value |
-        if ((pattrname.isNil and: parameter.isNil).not, {
+		if ((pattrname.isNil and: parameter.isNil).not, {
 			if (Pdef.all.includesKey(pattrname.asSymbol), {
 				if (this.properties.asDict.includesKey(parameter.asSymbol), {
 					if (value.isNil.not, {
@@ -356,8 +376,10 @@ Convenience {
 
 						pdefnProperties = pdefnProperties.collect{ | key |
 							var pdefn;
+							//if ((key == parameter.asSymbol).not, {
 							pdefn = Pdefn((pattrname.asString++"_"++key.asString).asSymbol).pattern;
 							[key.asSymbol, pdefn]
+							//})
 						};
 
 						Pdef(pattrname,
@@ -365,12 +387,13 @@ Convenience {
 								pair;
 							}.flat)
 						);
-						
+
 						Pbindef(pattrname, parameter.asSymbol, Pdefn((pattrname.asString++"_"++parameter).asSymbol).pattern);
+
 						// fadeTime hack end
-						/* Pbindef only has Pdef's fadeTime when it incrementally 
+						/* Pbindef only has Pdef's fadeTime when it incrementally
 						changed from a Pdef the first time.
-						also Pdefn does not do fadeTime.. so here just used as a look up system */
+						also Pdefn does not do fadeTime.. only in this way it seems */
 					}, {
 						^Pdefn((pattrname.asString++"_"++parameter).asSymbol).pattern
 					})
@@ -380,16 +403,16 @@ Convenience {
 			}, {
 				"Convenience:: pp -> pattrname does not exist".postln
 			})
-        }, {
+		}, {
 			"Convenience:: pp -> needs a pattrname and param".postln
 		})
-    }
-	
+	}
+
 	*fade { | name, fadeTime |
 		//if (patterns.includes(name.asSymbol), {
-			//Ndef(name.asSymbol).source.fadeTime_(fadeTime); // ndef soruce -> pdef
-			Pdef(name.asSymbol).fadeTime_(fadeTime);
-			Ndef(name.asSymbol).fadeTime_(fadeTime); // ndef
+		//Ndef(name.asSymbol).source.fadeTime_(fadeTime); // ndef soruce -> pdef
+		Pdef(name.asSymbol).fadeTime_(fadeTime);
+		Ndef(name.asSymbol).fadeTime_(fadeTime); // ndef
 		//}, {
 		//	"Convenience:: pattern not running".postln
 		//})
@@ -413,12 +436,10 @@ Convenience {
 		// crawler load synths user config
 		if (loadSynths == true, {
 			this.addSynths(server);
-			if (ConvenientCatalog.fxsynthsBuild.not, {
-				ConvenientCatalog.addFxs(numFxChannels);
-			});
+			this.addFxSynths(numFxChannels);
 		});
 
-		
+
 
 	}
 
@@ -592,8 +613,8 @@ Convenience {
 				Buffer.readChannel(server, file.fullPath;, channels: [0]).normalize(0.99);
 				/*
 				Buffer.readChannel(server, file.fullPath,
-					channels: [numChannels.collect{arg i; i}].flat
-					//channels: [numChannels.collect{arg i; i}].flat.select{} // only select the chans we want
+				channels: [numChannels.collect{arg i; i}].flat
+				//channels: [numChannels.collect{arg i; i}].flat.select{} // only select the chans we want
 				).normalize(0.99);
 				*/
 			};
@@ -719,6 +740,12 @@ Convenience {
 		});
 	}
 
+	*addFxSynths { | server |
+		if (ConvenientCatalog.fxsynthsBuild.asBoolean.not,{
+			ConvenientCatalog.addFxs(server);
+		});
+	}
+
 	*get { | folder, index |
 
 		if (buffers.notEmpty, {
@@ -731,9 +758,7 @@ Convenience {
 				if(Convenience.folders.asArray[0].isNil.not, {
 					folder = Convenience.folders.asArray[0];
 				}, {
-					Error("Conveience::*get::
-					folder is unspecified, which is okay
-					but *get cant find a folder to use").throw;
+					Error("Conveience::*get:: folder is unspecified, which is okay but *get cant find a folder to use").throw;
 					^nil
 				})
 			});
@@ -744,9 +769,7 @@ Convenience {
 					folder = Convenience.folders.asArray[0];
 					"*get::replacing with: %".format(folder).postln;
 				}, {
-					Error("Convenience::*get::
-					user is asking for folder which is not there,
-					and *get cant find another folder to replace it with").throw;
+					Error("Convenience::*get:: user is asking for folder which is not there, and *get cant find another folder to replace it with").throw;
 					^nil
 				})
 			});
@@ -960,69 +983,3 @@ Convenience {
 	}
 
 }
-
-
-
-
-
-/*
-
-(
-Pdef(\main, {
-Ppar([
-Pbindef(\first,
-\dur, Pseq([Rest(3), 8], inf),
-\degree, Pseq([5,9], inf)
-).trace(prefix: '1'),
-Pbindef(\second,
-\dur, Pseq([Rest(8), 12], inf),
-\degree, Pseq([2,3], inf),
-\octave, 6
-).trace(prefix: '2'),
-Pbindef(\third,
-\dur, Pseq([Rest(15), 20], inf),
-\degree, Pseq([10,8], inf),
-\octave, 5
-).trace(prefix: '3')
-])
-}).play
-)
-
-(
-Pdef(\main, {
-Ppar([
-Pbindef(\first,
-\dur, Pseq([Rest(0.5), 8], inf),
-\degree, Pseq([5,9], inf)
-).trace(prefix: '1'),
-Pbindef(\second,
-\dur, Pseq([Rest(1), 12], inf),
-\degree, Pseq([2,3], inf),
-\octave, 6
-).trace(prefix: '2'),
-Pbindef(\third,
-\dur, Pseq([Rest(3), 20], inf),
-\degree, Pseq([10,8], inf),
-\octave, 5
-).trace(prefix: '3')
-])
-}).play
-)
-
-
-
-{SinOsc.ar(730)!2}.play
-
-
-
-Pif
-
-PS  classes
-
-Pdef(\main).isPlaying
-
-
-.poll(,)*/
-
-
-

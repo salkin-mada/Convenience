@@ -25,10 +25,10 @@
 
 		// convolution: {|in|}, // TODO
 
-		smear: { |in, smear=0.5|
+		smear: { |in, mush=0.5|
 			var chain = Array.fill(numchans, {|i| FFT(LocalBuf(2048), in[i])});	
 
-			IFFT(PV_MagSmear(chain, bins: smear*100)); 
+			IFFT(PV_MagSmear(chain, bins: mush*100)); 
 
 		},
 

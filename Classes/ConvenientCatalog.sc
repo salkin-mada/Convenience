@@ -39,7 +39,7 @@ ConvenientCatalog {
 				};
 
 				//win.close;
-				
+
 				synthsBuild = true;
 				addingSynths = false;
 
@@ -100,17 +100,17 @@ ConvenientCatalog {
 	*prMakeFxSynthDefs{ | numChannels = 2 |
 
 		// Category
-		fxmodules.keysValuesDo{|category, content|
+		fxmodules.keysValuesDo{ | category, content |
 
 			// Modules in category
-			content.keysValuesDo{|moduleName, moduleContent|
+			content.keysValuesDo{ | moduleName, moduleContent |
 				var fxdef, fxdefname;
 				fxdefname = moduleName.asString ++ numChannels;
 
 				//"loading module % from category % ".format(moduleName, category).poststamped;
 
 				// Create synthdef
-				fxdef = SynthDef(fxdefname.asSymbol, { | in, out, wet=0.5 |
+				fxdef = SynthDef(fxdefname.asSymbol, { | in, out, wet=1.0 |
 					var insig = In.ar(in, numChannels);
 					var sig = SynthDef.wrap(moduleContent, prependArgs: [insig]);
 
