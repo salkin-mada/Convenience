@@ -116,7 +116,7 @@ ConvenientCrawlerView/* : View*/ {
 
 		win.endFrontAction_({
 			if (win.isClosed.not,{
-				win.background_(Color.white).alpha_(0.4);
+				/* win.background_(Color.white).alpha_(0.4);
 				header.stringColor_(Color.white);
 				header.background_(Color.white);
 				stateButton.states_([
@@ -124,7 +124,7 @@ ConvenientCrawlerView/* : View*/ {
 					["transparent", Color.white, Color.white]
 				]);
 				depthSetter.stringColor_(Color.white);
-				depthSetter.background_(Color.white);
+				depthSetter.background_(Color.white); */
 			})
 		});
 

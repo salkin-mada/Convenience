@@ -12,7 +12,7 @@ ConvenientListView : View {
 	}
 
 	*open {
-		var backgroundColor = Color.fromHexString("#808B9D");
+		var backgroundColor = Color.fromHexString("#F06292");
 
 		if (listWindowOpen.not, {
 			// main
@@ -31,9 +31,9 @@ ConvenientListView : View {
 			});
 
 			win.endFrontAction_({
-				if (win.isClosed.not,{
+				/* if (win.isClosed.not,{
 					win.background_(Color.white).alpha_(0.4)
-				})
+				}) */
 			});
 
 			this.makeList(win);

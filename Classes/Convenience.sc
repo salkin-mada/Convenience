@@ -3,9 +3,11 @@ Convenience {
 	classvar loadSynths = true; // should crawler auto load synths
 	classvar verbosePosts = false; // debug or interest
 	classvar suggestions = true; // you want some?
+	classvar <>numFxChannels = 2; // default number of fx channels
 
 	// private config
-	classvar <dir, <buffers, <folderPaths;
+	classvar <dir, <buffers, <folderPaths, <patterns;
+	classvar tmpName;
 	classvar loadFn;
 	classvar listWindow;
 
@@ -17,6 +19,7 @@ Convenience {
 		server = server ? Server.default;
 		buffers = Dictionary.new;
 		folderPaths = Dictionary.new;
+		patterns = IdentitySet.new;
 		loadFn = #{ | server | Convenience.prPipeFoldersToLoadFunc(server) };
 		this.prAddEventType;
 		"\nConvenience is possible".postln;
@@ -37,14 +40,54 @@ Convenience {
 		"\n\tConvenience:: welcome".postln;
 	}
 
-	*p { | name, type=\Convenience, out = 0, folder, index = 1, dur = 8, stretch = 1.0,
+	*properties {
+		^[
+			'name' -> \nil,
+			'numChannels' -> 2,
+			'type' -> \Convenience,
+			'out' -> 0,
+			'folder' -> \nil,
+			'index' -> 1,
+			'dur' -> 4,
+			'stretch' -> 1.0,
+			'pos' -> 0,
+			'loop' -> 0,
+			'rate' -> 1,
+			'degree' -> 0,
+			'octave' -> 4,
+			'root' -> 0,
+			'scale' -> \nil,
+			'cutoff' -> 22e3,
+			'res'-> 0.01,
+			'fgain' -> 1.0,
+			'ftype' -> 0,
+			'bass' -> 0,
+			'pan' -> 0,
+			'width' -> 2.0,
+			'spread' -> 0.5,
+			'amp' -> 0.5,
+			'attack' -> 0.01,
+			'sustain' -> 1.0,
+			'release' -> 0.5,
+			'tempo' -> \nil,
+			'tuningOnOff' -> 1,
+			'basefreq' -> 440,
+			'pitchShiftOnOff' -> 0,
+			'pitchRatio' -> 1.0,
+			'formantRatio' -> 1.0
+		]
+	}
+
+	*p { | name, bus = 0, numChannels = 2, type=\Convenience, out = 0, folder, index = 1, dur = 4, stretch = 1.0,
 		pos = 0, loop = 0, rate = 1, degree = 0, octave = 3, root = 0, scale,
-		cutoff = 22e3, bass = 0, pan = 0, spread = 0, amp = 0.5, attack = 0.1,
+		cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0, pan = 0,
+		width = 2.0, spread = 0.5, amp = 0.5, attack = 0.01,
 		sustain=1.0, release = 0.5, tempo, tuningOnOff = 0,
-		basefreq = 440, fftOnOff = 0, binRange = 20, pitchShiftOnOff = 0, pitchRatio = 1.0, formantRatio = 1.0 |
+		basefreq = 440, pitchShiftOnOff = 0, pitchRatio = 1.0, formantRatio = 1.0 ...args |
 
-		//var return;
+		var properties, pdefnProperties = List.new;
 
+		properties = Dictionary.with(*this.properties.collect{arg item; item});
 
 		if (ConvenientCatalog.synthsBuild, {
 			if(name.isNil,{"needs a key aka name, please".throw; ^nil});
@@ -55,9 +98,10 @@ Convenience {
 			if (folder.isNil, {
 				if(Convenience.folders.asArray[0].isNil.not, {
 					folder = Convenience.folders.asArray[0];
-					//"choosing first bufferGroup".postln;
-				}, {Error("Conveience:: no buffers available").throw; ^nil})
+				}, {Error("Convenience:: no buffers available").throw; ^nil})
 			});
+
+			// note note note note
 			// if queried folder does not exist
 			// if (folder.isKindOf(Pattern).not, { // <-- not good, should be dynamic dispatched?
 			// 	// polymorphic.. feelings.
@@ -70,10 +114,57 @@ Convenience {
 			// 	})
 			// }, { /*folder received a pattern*/ });
 
+
+			// add to Convenience pattern set reference
+			patterns.add(name.asSymbol);
+			tmpName = name.asSymbol; // temporary name holder
+
 			// if scale is not set choose classic chromatic
 			if(scale.isNil, {
 				scale = Scale.chromatic;
 			});
+
+			// muligvis noget isNil.not stuff må til her, i et forsøg på value centralisering...
+			properties.keysValuesChange { | key, value |
+				switch(key)
+				{\name}{name}
+				{\numChannels}{numChannels}
+				{\type}{type}
+				{\out}{out}
+				{\folder}{folder}
+				{\index} {index}
+				{\dur} {dur}
+				{\stretch} {stretch}
+				{\pos} {pos}
+				{\loop} {loop}
+				{\rate} {rate}
+				{\degree} {degree}
+				{\octave} {octave}
+				{\root} {root}
+				{\scale} {scale}
+				{\cutoff} {cutoff}
+				{\res} {res}
+				{\fgain} {fgain}
+				{\ftype} {ftype}
+				{\bass} {bass}
+				{\pan} {pan}
+				{\width} {width}
+				{\amp} {amp}
+				{\attack} {attack}
+				{\sustain} {sustain}
+				{\release} {release}
+				{\tempo} {tempo}
+				{\tuningOnOff} {tuningOnOff}
+				{\basefreq} {basefreq}
+				{\pitchShiftOnOff} {pitchShiftOnOff}
+				{\pitchRatio} {pitchRatio}
+			};
+
+			properties.keysDo{ | key |
+				if (((key == \name) or: (key == \tempo)).not, {
+					pdefnProperties.add(key)
+				})
+			};
 
 			// decide what clock to use
 			// check if Utopia is in Class library
@@ -89,46 +180,242 @@ Convenience {
 				tempo = TempoClock(tempo);
 			});
 
+			pdefnProperties = pdefnProperties.collect{ | key |
+				var pdefn;
+				//switch(key)
+				//{\type} {[key.asSymbol, type]}
+				//{\scale} {[key.asSymbol, scale]}
+				//{
+				pdefn = Pdefn((name.asString++"_"++key.asString).asSymbol, properties.at(key)).pattern;
+				[key.asSymbol, pdefn]
+				//}
+			};
 
 			Pdef(name,
-				Pbind(
-					\type, type,
-					\fftOnOff, fftOnOff,
-					\pitchShiftOnOff, pitchShiftOnOff,
-					\tuningOnOff, tuningOnOff,
-					\basefreq, basefreq,
-					\out, out,
-					\folder, folder,
-					\index, index,
-					\dur, dur,
-					\stretch, stretch,
-					\pos, pos,
-					\loop, loop,
-					\rate, rate,
-					\degree, degree,
-					\octave, octave,
-					\root, root,
-					\scale, scale,
-					\cutoff, cutoff,
-					\bass, bass,
-					\pan, pan,
-					\spread, spread,
-					\amp, amp,
-					\attack, attack,
-					\sustain, sustain,
-					\release, release,
-					\binRange, binRange,
-					\pitchRatio, pitchRatio,
-					\formantRatio, formantRatio
-				);
-			).play(tempo);
+				Pbind().patternpairs_(pdefnProperties.collect{ | pair |
+					pair;
+				}.flat)
+			)/* .play(tempo) */;
+
+			if(numChannels.isNil, {
+				numChannels = 2;
+			});
+
+			if ((Ndef(name).isPlaying).not, {
+				Ndef(name).source = Pdef(name);
+				Ndef(name).reshaping = \elastic;
+				//Ndef(name).playN(out)
+				//Ndef(name).play(out: bus, numChannels: numChannels).mold(numChannels)
+				Ndef(name).mold(numChannels).play(out: bus);
+			}, {
+				if((numChannels == Ndef(name).numChannels).not or: (bus == Ndef(name).bus.index).not, {
+					//Ndef(name).play(out: bus, numChannels: numChannels).mold(numChannels)
+					Ndef(name).mold(numChannels).play(out: bus);
+				});
+				/* if((bus == Ndef(name).outputBusSOMETHING==???).not, {
+				Ndef(name).play(out: bus, numChannels: numChannels).mold(numChannels)
+				}); */
+			});
+			^Pdef(name);
 		}, {
 			"Convenience:: synths not added".postln;
 		});
 	}
 
-	*s { | name |
-		Pdef(name).stop;
+	*s { | name, fadeTime = 1 ...args |
+		if (name.isNil.not and: patterns.includes(name.asSymbol), {
+			Ndef(name).source.clear; // aka Pdef(name).stop
+			Ndef(name).stop(fadeTime);
+			patterns.remove(name.asSymbol);
+		}, {
+			"Convenience:: .s not a running pattern".postln
+		})
+
+	}
+
+	*sall { | fadeTime = 1 |
+		patterns.do{arg name;
+			Ndef(name.asSymbol).source.clear;
+			Ndef(name.asSymbol).stop(fadeTime);
+			patterns.remove(name.asSymbol);
+		}
+	}
+
+	*clear { | name ...args |
+		if (name.isNil.not, {
+			Ndef(name).source.clear; // aka Pdef(name).stop
+			Ndef(name).free;
+			Ndef(name).clear;
+			if (patterns.includes(name.asSymbol), {
+				patterns.remove(name.asSymbol);
+			});
+		}, {
+			"Convenience:: .s not a running pattern".postln
+		})
+
+	}
+
+	*clearAll { | name ...args |
+		patterns.do{arg name;
+			Ndef(name.asSymbol).source.clear;
+			Ndef(name.asSymbol).free;
+			Ndef(name.asSymbol).clear;
+			patterns.remove(name.asSymbol);
+		}
+	}
+
+	*tempo { | name, from, to, secs = 0 |
+
+	}
+
+	*fxs {
+		this.addFxSynths(numFxChannels);
+		^ConvenientCatalog.fxmodules;
+	}
+
+	*fxargs { | fxname |
+		this.addFxSynths(numFxChannels);
+		^ConvenientCatalog.getFx(fxname.asSymbol).argNames.reject(_ == 'in');
+	}
+
+	*pfx { | name, fxs /*, out = #[0,1],  server*/ ...args |
+		var fxList, chainSize;
+
+		//server = server ? Server.default;
+
+		fxList = Array.with(*fxs);
+		chainSize = fxList.size;
+
+
+		//"fxs: %".format(fxList).postln;
+		//args.do{arg i; i.asSymbol.postln};
+
+		if ((chainSize > 0) and: name.isNil.not and: fxs.isNil.not, {
+
+			// only if a .p has been made
+			//if (patterns.includes(name.asSymbol), {
+
+			this.addFxSynths(numFxChannels);
+
+
+			if (Ndef(name).isPlaying.not, {
+				Ndef(name).source = Pdef(name);
+				Ndef(name).reshaping = \elastic;
+				Ndef(name).play
+			});
+
+
+
+			/* if (Ndef(name).isPlaying.not, {
+			Ndef(name).source = Pdef(name);
+			Ndef(name).playN(out)
+			}); */
+
+			//"chainSize: %".format(chainSize).postln;
+
+			chainSize.do{ | i |
+				///// not working value.calss,.  how to get fx key??? hmm..
+				//if ((Ndef((name.asString).asSymbol)[i+1].value.class == fxs[i]).not, {
+				//fxList[i].postln;
+
+
+				if (ConvenientCatalog.fxlist.includesKey(fxList[i].asSymbol), {
+					// important to iterate from 1
+					// first fx should not be Ndef(\name)[0]
+					Ndef(name)[i+1] = \filter -> ConvenientCatalog.getFx(fxList[i].asSymbol);
+				}, {
+					"Convenience:: fx: % does not exist".format(fxList[i]).postln
+				})
+				//})
+			};
+
+			// default add dc filter
+			Ndef(name)[chainSize+1] = \filter -> ConvenientCatalog.getFx(\dc);
+
+			// default add limiter
+			Ndef(name)[chainSize+2] = \filter -> ConvenientCatalog.getFx(\limiter);
+
+			// last chain entry is control
+			Ndef(name)[chainSize+3] = \set -> Pbind(
+				\dur, Pdefn((name++"_dur").asSymbol),
+				*args
+			);
+
+			//});
+
+
+		}, {
+			// if (chainSize > 0, {
+			// 	"Convenience:: pfx needs a name".postln;
+			// }, {
+			// 	"Convenience:: pfx needs an array of fx keys".postln;
+
+			// });
+			//"Convenience:: pfx needs a name and an array of fx keys".postln;
+		})
+		^Ndef(name);
+	}
+
+	*pp { | pattrname, parameter, value |
+		if ((pattrname.isNil and: parameter.isNil).not, {
+			if (Pdef.all.includesKey(pattrname.asSymbol), {
+				if (this.properties.asDict.includesKey(parameter.asSymbol), {
+					if (value.isNil.not, {
+						// fadeTime hack begin
+						var properties, pdefnProperties = List.new;
+
+						properties = Dictionary.with(*this.properties.collect{arg item; item});
+
+						Pdefn((pattrname.asString++"_"++parameter).asSymbol, value);
+
+						properties.keysDo{ | key |
+							if (((key == \name) or: (key == \tempo)).not, {
+								pdefnProperties.add(key)
+							})
+						};
+
+						pdefnProperties = pdefnProperties.collect{ | key |
+							var pdefn;
+							//if ((key == parameter.asSymbol).not, {
+							pdefn = Pdefn((pattrname.asString++"_"++key.asString).asSymbol).pattern;
+							[key.asSymbol, pdefn]
+							//})
+						};
+
+						Pdef(pattrname,
+							Pbind().patternpairs_(pdefnProperties.collect{ | pair |
+								pair;
+							}.flat)
+						);
+
+						Pbindef(pattrname, parameter.asSymbol, Pdefn((pattrname.asString++"_"++parameter).asSymbol).pattern);
+
+						// fadeTime hack end
+						/* Pbindef only has Pdef's fadeTime when it incrementally
+						changed from a Pdef the first time.
+						also Pdefn does not do fadeTime.. only in this way it seems */
+					}, {
+						^Pdefn((pattrname.asString++"_"++parameter).asSymbol).pattern
+					})
+				}, {
+					"Convenience:: pp -> param does not exist".postln
+				})
+			}, {
+				"Convenience:: pp -> pattrname does not exist".postln
+			})
+		}, {
+			"Convenience:: pp -> needs a pattrname and param".postln
+		})
+	}
+
+	*fade { | name, fadeTime |
+		//if (patterns.includes(name.asSymbol), {
+		//Ndef(name.asSymbol).source.fadeTime_(fadeTime); // ndef soruce -> pdef
+		Pdef(name.asSymbol).fadeTime_(fadeTime);
+		Ndef(name.asSymbol).fadeTime_(fadeTime); // ndef
+		//}, {
+		//	"Convenience:: pattern not running".postln
+		//})
 	}
 
 	*crawl { | initpath, depth = 0, server |
@@ -149,14 +436,17 @@ Convenience {
 		// crawler load synths user config
 		if (loadSynths == true, {
 			this.addSynths(server);
+			this.addFxSynths(numFxChannels);
 		});
+
+
 
 	}
 
 	*prParseFolders{ | initpath, depth = 0, server |
 		//var initPathDepthCount = PathName(initpath).fullPath.withTrailingSlash.split(thisProcess.platform.pathSeparator).size;
 		var initPathDepth, anythingFound;
-		
+
 		/*protection against setting an initpath ending with / or // etc,
 		which will break the depth control*/
 		while({initpath.endsWith("/")}, {
@@ -165,7 +455,7 @@ Convenience {
 		});
 
 		initPathDepth = PathName(initpath).fullPath.split($/).size;
-	
+
 		server = server ? Server.default;
 		dir = initpath; //update getter
 
@@ -218,8 +508,7 @@ Convenience {
 		ServerBoot.add(loadFn, server);
 		// if server is running create rightaway
 		if (server.serverRunning) {
-			{ // do in routine, for s.sync in *load
-				// the routine should be in *load though.
+			{
 				this.prPipeFoldersToLoadFunc(server)
 			}.fork(AppClock)
 		};
@@ -237,7 +526,7 @@ Convenience {
 		};*/
 
 		if (folderPaths.isEmpty.not,{
-			
+
 			if (news,{
 				folderPaths.keysValuesDo{ | key, path |
 					if (buffers.includesKey(key).not,{
@@ -251,10 +540,10 @@ Convenience {
 				};
 
 			}, {
-				"Convenience::crawl -> no new folders found".postln;
+				"Convenience::crawl -> new folders not found".postln;
 			});
-			
-			
+
+
 			// update folderPaths to be even with loaded buffers
 			folderPaths.keysDo{ | key |
 				//key.postln;
@@ -288,6 +577,7 @@ Convenience {
 			files = folder.entries.select { | file |
 				var hiddenFile;
 				var result;
+
 				// check if file is dot type
 				file.fileName.do{ | char, i |
 					if(char.isPunct and: i == 0, {
@@ -297,7 +587,7 @@ Convenience {
 						hiddenFile = true;
 					})
 				};
-
+				// then
 				if(hiddenFile.asBoolean.not, {
 					result = supportedExtensions.includes(file.extension.toLower.asSymbol);
 				}, {result = false});
@@ -308,12 +598,25 @@ Convenience {
 			//"files: %".format(files).postln;
 
 			loadedBuffers = files.collect { | file |
-				server.sync;
+				var numChannels;
 				working = true;
+
+				//server.sync;
+				// use this to get numChannels of file "before" it read into buffer
+				//numChannels = SoundFile.use(file.fullPath, {arg qfile; qfile.numChannels});
+				server.sync;
+
 				if(verbosePosts.asBoolean,{
-					"reading first channel from\n\t %".format(file.fileName).postln;
+					"reading % channel from\n\t %".format(numChannels, file.fileName).postln;
 				});
+
 				Buffer.readChannel(server, file.fullPath;, channels: [0]).normalize(0.99);
+				/*
+				Buffer.readChannel(server, file.fullPath,
+				channels: [numChannels.collect{arg i; i}].flat
+				//channels: [numChannels.collect{arg i; i}].flat.select{} // only select the chans we want
+				).normalize(0.99);
+				*/
 			};
 
 			if (working == true, {
@@ -437,6 +740,12 @@ Convenience {
 		});
 	}
 
+	*addFxSynths { | server |
+		if (ConvenientCatalog.fxsynthsBuild.asBoolean.not,{
+			ConvenientCatalog.addFxs(server);
+		});
+	}
+
 	*get { | folder, index |
 
 		if (buffers.notEmpty, {
@@ -449,9 +758,7 @@ Convenience {
 				if(Convenience.folders.asArray[0].isNil.not, {
 					folder = Convenience.folders.asArray[0];
 				}, {
-					Error("Conveience::*get::
-folder is unspecified, which is okay
-but *get cant find a folder to use").throw;
+					Error("Conveience::*get:: folder is unspecified, which is okay but *get cant find a folder to use").throw;
 					^nil
 				})
 			});
@@ -462,9 +769,7 @@ but *get cant find a folder to use").throw;
 					folder = Convenience.folders.asArray[0];
 					"*get::replacing with: %".format(folder).postln;
 				}, {
-					Error("Convenience::*get::
-user is asking for folder which is not there,
-and *get cant find another folder to replace it with").throw;
+					Error("Convenience::*get:: user is asking for folder which is not there, and *get cant find another folder to replace it with").throw;
 					^nil
 				})
 			});
@@ -558,20 +863,12 @@ and *get cant find another folder to replace it with").throw;
 		// }.asArray;
 	}
 
-	*properties {
-		^[
-			"name", "type", "out", "folder", "index", "dur", "stretch",
-			"pos", "loop", "rate", "degree", "octave", "root", "scale",
-			"cutoff", "bass", "pan", "spread", "amp", "attack",
-			"sustain", "release", "tempo", "tuningOnOff",
-			"basefreq", "fftOnOff", "binRange", "pitchShiftOnOff", "pitchRatio", "formantRatio"
-		]
-	}
-
 	*prAddEventType {
 		Event.addEventType(\Convenience, {
-			var numChannels, scaling, fft, pitchshift;
+			var bufferNumChannels, outputNumChannels, scaling, pitchshift;
 
+			// if buffer is not directly used
+			// use folder and index references
 			if (~buffer.isNil) {
 				var folder = ~folder;
 				var index = ~index;
@@ -593,46 +890,40 @@ and *get cant find another folder to replace it with").throw;
 				//}
 			};
 
-			numChannels = ~buffer.bufnum.numChannels;
+			bufferNumChannels = ~buffer.numChannels;
+			//"eventType found % bufferNumChannels".format(bufferNumChannels).postln;
+
+			outputNumChannels = ~numChannels;
+			//outputNumChannels.postln;
 
 			scaling = ~tuningOnOff;
 			if(scaling.isNil) {scaling = 0};
-			fft = ~fftOnOff;
-			if(fft.isNil) {fft = 0};
 			pitchshift = ~pitchShiftOnOff;
 			if(pitchshift.isNil) {pitchshift = 0};
 
 			case
 			// favoring pitchshift
-			{fft == 1 and: pitchshift == 0 and: scaling == 0} {
-				~instrument = \ConvenienceBufBins;
-				//"FFT".postln;
-			}
-			{fft == 1 and: pitchshift == 0 and: scaling == 1} {
-				~instrument = \ConvenienceBufBinsScale;
-				//"FFT+SCALING".postln;
-			}
 			{pitchshift == 1 and: scaling == 0} {
-				~instrument = \ConveniencePitchShift;
+				~instrument = ("ConveniencePitchShift_"++outputNumChannels).asSymbol;
 				//"PITCHSHIFT".postln;
 			}
 			{pitchshift == 1 and: scaling == 1} {
-				~instrument = \ConveniencePitchShiftScale;
+				~instrument = ("ConveniencePitchShiftScale_"++outputNumChannels).asSymbol;
 				//"PITCHSHIFT+SCALING".postln;
 			}
-			{scaling == 1 and: fft == 0 and: pitchshift == 0} {
+			{scaling == 1 and: pitchshift == 0} {
 				//"SCALING -- ".post;
-				switch(numChannels,
+				switch(bufferNumChannels,
 					1, {
-						~instrument = \ConvenienceMonoScale;
+						~instrument = ("ConvenienceMonoScale_"++outputNumChannels).asSymbol;
 						//"mono".postln;
 					},
 					2, {
-						~instrument = \ConvenienceStereoScale;
+						~instrument = ("ConvenienceStereoScale_"++outputNumChannels).asSymbol;
 						//"stereo".postln;
 					},
 					{
-						~instrument = \ConvenienceMonoScale;
+						~instrument = ("ConvenienceMonoScale_"++outputNumChannels).asSymbol;
 						//"mono-default".postln;
 					}
 				);
@@ -640,17 +931,17 @@ and *get cant find another folder to replace it with").throw;
 			}
 			{
 				//"NORMALES -- ".post;
-				switch(numChannels,
+				switch(bufferNumChannels,
 					1, {
-						~instrument = \ConvenienceMono;
+						~instrument = ("ConvenienceMono_"++outputNumChannels).asSymbol;
 						//"mono".postln;
 					},
 					2, {
-						~instrument = \ConvenienceStereo;
+						~instrument = ("ConvenienceStereo_"++outputNumChannels).asSymbol;
 						//"stereo".postln;
 					},
 					{
-						~instrument = \ConvenienceMono;
+						~instrument = ("ConvenienceMono_"++outputNumChannels).asSymbol;
 						//"mono-default".postln;
 					}
 				);
@@ -691,86 +982,4 @@ and *get cant find another folder to replace it with").throw;
 		^result
 	}
 
-	*modul { | name = \ConvenientSynthGraph, busnum, numLayers = 10, out |
-		if(busnum.isNil.not, {
-			ConvenientCatalog.prSynthGraph(name, busnum, numLayers, out)
-		}, {"no busnum(s) specified".postln})
-	}
-
-	*lfos { | numLFOs = 10, freq = 0.1 |
-		ConvenientCatalog.numLFOs_(numLFOs);
-		ConvenientCatalog.prMakeLFOs(freq);
-	}
-
-	*map { | target = \ConvenientSynthGraph, prob = 0.75 |
-		ConvenientCatalog.prMapLFOs(target, prob);
-	}
-
-
 }
-
-
-
-
-
-/*
-
-(
-Pdef(\main, {
-Ppar([
-Pbindef(\first,
-\dur, Pseq([Rest(3), 8], inf),
-\degree, Pseq([5,9], inf)
-).trace(prefix: '1'),
-Pbindef(\second,
-\dur, Pseq([Rest(8), 12], inf),
-\degree, Pseq([2,3], inf),
-\octave, 6
-).trace(prefix: '2'),
-Pbindef(\third,
-\dur, Pseq([Rest(15), 20], inf),
-\degree, Pseq([10,8], inf),
-\octave, 5
-).trace(prefix: '3')
-])
-}).play
-)
-
-(
-Pdef(\main, {
-Ppar([
-Pbindef(\first,
-\dur, Pseq([Rest(0.5), 8], inf),
-\degree, Pseq([5,9], inf)
-).trace(prefix: '1'),
-Pbindef(\second,
-\dur, Pseq([Rest(1), 12], inf),
-\degree, Pseq([2,3], inf),
-\octave, 6
-).trace(prefix: '2'),
-Pbindef(\third,
-\dur, Pseq([Rest(3), 20], inf),
-\degree, Pseq([10,8], inf),
-\octave, 5
-).trace(prefix: '3')
-])
-}).play
-)
-
-
-
-{SinOsc.ar(730)!2}.play
-
-
-
-Pif
-
-PS  classes
-
-Pdef(\main).isPlaying
-
-
-.poll(,)*/
-
-
-
