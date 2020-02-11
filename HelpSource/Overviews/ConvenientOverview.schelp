@@ -7,8 +7,9 @@ list::
 ::
 
 table::
-## link::Classes/ConvenientDefinitions:: || synth definitions
+## link::Classes/ConvenientCatalog:: || buffer playback and fx methods
 ## link::Classes/ConvenientCrawlerView:: || crawl file loader gui
 ## link::Classes/ConvenientListView:: || list gui, drag and drop folder keys into scide
-## link::Classes/Buffer::, link::Classes/PlayBuf::, link::Classes/PlayBufCf::, link::Classes/Pdef::, link::Classes/Pbind:: || selection of used classes
+## link::Classes/extTempoClock:: || convenient tempo clock thanks to redFrik
+## link::Classes/Buffer::, link::Classes/Ndef::, link::Classes/Pdef::, link::Classes/Pbind::, link::Classes/Pdefn:: || selection of used classes
 ::

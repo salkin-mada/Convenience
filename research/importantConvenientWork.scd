@@ -1,12 +1,4 @@
 
-
-//// !!!!!!!!!!!!!!!!!!!!!!!!!
-///     yEEEEEEESSssss
-
-{| lol, hgjdg |}.argNames
-
-
-
 (
 [
 	"/home/salkin/soundfiles lenovo/ZINK/UX0090_ 001 - 001_001.WAV",
@@ -22,125 +14,13 @@
 
 
 
+Ndef(\asdf).play
 
-//////////////////////////////
 
-Convenience.list.p(\asd, index: 2, dur: 4)
-Convenience.p(\asd, index: Pwhite(0,10).round, dur: 0.2, sustain: 0.1, release: 0.1)
-Convenience.s(\asd)
-Convenience.pfx(\asd, [\spectraldelay, Convenience.fxs.choose, Convenience.fxs.choose, Convenience.fxs.choose], nil , \nam, \yo)
-Convenience.crawl("A:/LYDFILER/Drums/Sound Master, Memory Rhythm SR-88")
-Convenience.crawl("A:/LYDFILER/Drums/Roland TR-505")
+Convenience.crawl("A:/LYDFILER/Drums/CR-909/samples/CR-909 FULL", 1)
 Convenience.list
-Convenience.p(\asd, dur: 0.9, rate: 0.8, loop: 1, amp: 0.9, out: 0)
-Convenience.p(\asd, dur: Pwhite(0.1,1.0), rate: Pwhite(0.1,5.0), loop: 1, index: Pwhite(0,30).round, amp: 0.9, out: 0)
-Convenience.s(\asd)
-Convenience.gpp(\asd, \dur).source.asStream.nextN(1)
-Convenience.properties
-Convenience.fxs.choose
-Convenience.pfx(\asd, [Convenience.fxs.choose, Convenience.fxs.choose], nil , \nam, \yo).fadeTime_(1)
-Convenience.pfx(\asd, [\spectraldelay, \enhance]).fadeTime_(1)
-Ndef(\asd).isPlaying
-
-
-// mainer, noget gør at det ikke virker at liste tingene efter hinanden første gang??
-(
-ZzzZzZzzzZz.crawl("A:/LYDFILER/Drums/Roland TR-707")
-.p(\sd,
-	dur: Pseq([1/8,1/8,1/8,1/8,2/8,2/8,3/8], inf),
-	rate: Pwhite(0.9,1.1),
-	loop: 1,
-	index: Pseq([1,2,1,1,1,6,8], inf),
-	amp: 1.9,
-	pan: Pwhite(-1),
-	out: 0)
-.pfx(\sd,
-	[\smear, \spectraldelay],
-	args:[\wet, Psinen(0.2)]).fadeTime_(6)
-)
-
-
-(
-d = ZzzZzZzzzZz;
-//d.crawl("A:/LYDFILER/Drums/808kit",3);
-d.crawl("/home/salkin/soundfiles lenovo/ZINK",3);
-//d.crawl("/media/salkin/MOVE SSD/LYDFILER/Drums/Roland TR-606");
-//d.crawl("/media/salkin/MOVE SSD/LYDFILER/Drums/808kit", 3);
-)
-
-d.list();
-
-d.get(d.randomFolder, 0).numChannels
-
-"/home/salkin/.local/share/SuperCollider/Extensions/Convenience/Modules/Core/BufferPlayers.scd".load
-
-(
-d.p(\sdse,
-	//folder: 'Sound_Master_Memory_Rhythm_SR_88',
-	//folder: Pseq(['kicks','hihats','kicks','snares'], inf),
-	folder: \ZINK,
-	dur: Pseq(
-		[
-			Pseq([1,1,1,1,1,2,5,1,1,3,1], 1),
-			/*Pseq([5/8,Rest(1/8),1/8,1/8,
-			Rest(2/8),2/8,3/8,5/8,6/8,7/8,6/8,5/8,4/6,3/5,2/5], 1)*/
-	], inf),
-	rate: 1,/*Pfunc({|envir|
-		2*envir.dur;
-	}),*/
-	pos: Psinen(0.01),
-	stretch: Psinen(0.6).linlin(0.0,1.0,-0.05,0.05)+1,
-	loop: 0,
-	index: 3,//Pseq([6,6,6,6,8,11,12,13], inf),
-	amp: 0.4,
-	attack: 0.01,
-	sustain: 0.2,
-	cutoff: Psinen(0.06)*6000+2900,
-	release: Psrpn(0.0323)+0.3,
-	bass: 1.5,
-	pan: Pwhite(-1)*0.9,
-	out: 0)
-.pfx(\sdse,
-	[\freqshift, \scramble, \smear, \binshift, \companderD, \limiter, \dc],
-	args:[
-		\wet1, Psrpn(0.03)*0.5,
-		\freq, Psrpn(0.08)*3.9,
-		\wet2, Psinen(0.4)*0.5,
-		\scramwipe, Pwhite()*0.8,
-		\scramwidth, Psinen(0.23)*Psinen(0.13),
-		\wet3, Pwhite()*0.8,
-		\smear, Pwhite()+0.1,
-		\wet4, Pwhite()*0.6,
-		\binshift, Pwhite(),
-		\wet5, 1,
-		\thresh, 0.4,//d.gpp(\sdse, \dur),
-		\slopeBelow, 0.6,
-		\slopeAbove, 0.8,
-		\clamp, 0.4,
-		\release, 0.01,
-		\wet6, 1,
-		\level, 0.9,
-		\wet7, 1,
-		\coef, 0.5
-	]).fadeTime_(0.1)
-)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+Convenience.p(\ad, folder: \midtom, dur: 3, tuningOnOff:1, degree: Pseq([1,5,9], inf), octave: 6, tempo: 5)
+Convenience.p(\dr, folder: \hihat, dur: 2, tuningOnOff:1, degree: Pseq([1,5,9], inf), octave: 6, tempo: 10)
 
 
 
@@ -151,8 +31,11 @@ SynthDef(\ping, {|freq|
 	e= EnvGen.ar(Env.perc(0, 0.1), doneAction:2);
 	z= SinOsc.ar(freq.dup, 0, 0.2);
 	OffsetOut.ar(0, z*e);
-}).send(s);
+}).add;
 )
+
+Pdef(\fir, Pbind(\instrument, \ping, \dur, 2, \degree, Pseq([1,5,9], inf), \tempo, 4)).play
+Pdef(\ota, Pbind(\instrument, \ping, \dur, 3, \degree, Pseq([1,5,9], inf), \octave, 6)).play
 
 //-- go from 1.5 to 0.8 and end on downbeat 4 sec from now
 ~from= 0.8;
@@ -239,22 +122,6 @@ d.sync(~to2, ~sec);
 c= TempoClock(~from);
 a= Pbind(\degree, Pseq([0, 5, 3, 2], inf), \dur, 0.125, \amp, 0.1).play(c);
 c.sync(~to, ~sec, 0.1);
-)
-
-
-
-Sleet
-
-
-
-// Make the library stereo
-z = Sleet.new(numChannels: 2);
-
-// Simple example using Sleet to add fx to a panning PinkNoise source
-(
-    Ndef(\pinknoise, { Pan2.ar(PinkNoise.ar(0.5), SinOsc.kr(0.1)) });
-    Ndef(\pinknoise)[1] = \filter -> z.get('delay');
-    Ndef(\pinknoise).play;
 )
 
 
