@@ -6,7 +6,7 @@ Convenience {
 	classvar <>numFxChannels = 2; // default number of fx channels
 
 	// private config
-	classvar <dir, <buffers, <folderPaths, <patterns;
+	classvar <dir, <buffers, <folderPaths, <patterns, <inputs;
 	classvar tmpName;
 	classvar loadFn;
 	classvar listWindow;
@@ -20,6 +20,7 @@ Convenience {
 		buffers = Dictionary.new;
 		folderPaths = Dictionary.new;
 		patterns = IdentitySet.new;
+		inputs = IdentitySet.new;
 		loadFn = #{ | server | Convenience.prPipeFoldersToLoadFunc(server) };
 		this.prAddEventType;
 		"\nConvenience is possible".postln;
@@ -161,14 +162,14 @@ Convenience {
 			};
 
 			properties.keysDo{ | key |
-				if (((key == \name) or: (key == \tempo)).not, {
+				if (((key == \name)/*  or: (key == \tempo) */).not, {
 					pdefnProperties.add(key)
 				})
 			};
 
 			// decide what clock to use
 			// check if Utopia is in Class library
-			if ( Main.packages.asDict.includesKey(\Utopia) == true, {
+			/* if ( Main.packages.asDict.includesKey(\Utopia) == true, {
 				if (tempo.class == BeaconClock, {
 					// great do nothing
 					//"\ttempo is BeaconClock controlled".postln
@@ -178,7 +179,7 @@ Convenience {
 				})
 			}, {
 				tempo = TempoClock(tempo);
-			});
+			}); */
 
 			pdefnProperties = pdefnProperties.collect{ | key |
 				var pdefn;
@@ -229,8 +230,12 @@ Convenience {
 			patterns.remove(name.asSymbol);
 		}, {
 			"Convenience:: .s not a running pattern".postln
+		});
+		if (name.isNil.not and: inputs.includes(name.asSymbol), {
+			Ndef(name).source.clear; // aka Pdef(name).stop
+			Ndef(name).stop(fadeTime);
+			inputs.remove(name.asSymbol);
 		})
-
 	}
 
 	*sall { | fadeTime = 1 |
@@ -238,29 +243,43 @@ Convenience {
 			Ndef(name.asSymbol).source.clear;
 			Ndef(name.asSymbol).stop(fadeTime);
 			patterns.remove(name.asSymbol);
+		};
+		inputs.do{arg name;
+			Ndef(name.asSymbol).free;
+			Ndef(name.asSymbol).clear;
+			inputs.remove(name.asSymbol);
 		}
 	}
 
 	*clear { | name ...args |
-		if (name.isNil.not, {
+		if (name.isNil.not and: patterns.includes(name.asSymbol) or: inputs.includes(name.asSymbol), {
 			Ndef(name).source.clear; // aka Pdef(name).stop
 			Ndef(name).free;
 			Ndef(name).clear;
 			if (patterns.includes(name.asSymbol), {
 				patterns.remove(name.asSymbol);
 			});
+			if (inputs.includes(name.asSymbol), {
+				inputs.remove(name.asSymbol);
+			});
 		}, {
-			"Convenience:: .s not a running pattern".postln
+			"Convenience:: .s not a running Convenience pattern/module".postln
 		})
 
 	}
 
-	*clearAll { | name ...args |
+	*clearAll {
 		patterns.do{arg name;
 			Ndef(name.asSymbol).source.clear;
 			Ndef(name.asSymbol).free;
 			Ndef(name.asSymbol).clear;
 			patterns.remove(name.asSymbol);
+		};
+		inputs.do{arg name;
+			Ndef(name.asSymbol).source.clear;
+			Ndef(name.asSymbol).free;
+			Ndef(name.asSymbol).clear;
+			inputs.remove(name.asSymbol);
 		}
 	}
 
@@ -408,14 +427,66 @@ Convenience {
 		})
 	}
 
+	*ifx { | name, inbus = 0, mul = 0.5, outbus = 0, /* numChannels = 2, */ fxs ...args |
+		var fxList, chainSize;
+		
+		fxList = Array.with(*fxs);
+		chainSize = fxList.size;
+		
+		if ((chainSize > 0) and: name.isNil.not and: fxs.isNil.not, {
+			
+			this.addFxSynths(numFxChannels);
+			
+			inputs.add(name.asSymbol);
+			/* 
+			Ndef(name);
+			Ndef(name).source = {SoundIn.ar(bus, mul)};
+			*/
+			//Ndef(name, {SoundIn.ar(bus, mul)});
+			
+			Ndef(name)[0] = {SplayAz.ar(numFxChannels, SoundIn.ar(inbus, mul))};
+			
+			chainSize.do{ | i |
+				if (ConvenientCatalog.fxlist.includesKey(fxList[i].asSymbol), {
+					// important to iterate from 1
+					// first fx should not be Ndef(\name)[0]
+					Ndef(name)[i+1] = \filter -> ConvenientCatalog.getFx(fxList[i].asSymbol);
+				}, {
+					"Convenience:: fx: % does not exist".format(fxList[i]).postln
+				})
+			};
+			
+			// default add dc filter
+			Ndef(name)[chainSize+1] = \filter -> ConvenientCatalog.getFx(\dc);
+			
+			// default add limiter
+			Ndef(name)[chainSize+2] = \filter -> ConvenientCatalog.getFx(\limiter);
+			
+			Ndef(name).play(outbus);
+
+			// last chain entry is control
+			Ndef(name)[chainSize+3] = \set -> Pbind(
+				\dur, 1,
+				*args
+			);
+		});
+		^Ndef(name);
+	}
+
 	*fade { | name, fadeTime |
-		//if (patterns.includes(name.asSymbol), {
-		//Ndef(name.asSymbol).source.fadeTime_(fadeTime); // ndef soruce -> pdef
-		Pdef(name.asSymbol).fadeTime_(fadeTime);
-		Ndef(name.asSymbol).fadeTime_(fadeTime); // ndef
-		//}, {
-		//	"Convenience:: pattern not running".postln
-		//})
+		if (patterns.includes(name.asSymbol), {
+			//Ndef(name.asSymbol).source.fadeTime_(fadeTime); // ndef soruce -> pdef
+			Pdef(name.asSymbol).fadeTime_(fadeTime);
+			Ndef(name.asSymbol).fadeTime_(fadeTime); // ndef
+		});
+		
+		if (inputs.includes(name.asSymbol), {
+			Ndef(name.asSymbol).fadeTime_(fadeTime); // ndef
+		});
+		
+		if (patterns.includes(name.asSymbol).not or: inputs.includes(name.asSymbol).not, {
+			"Convenience:: pattern/module not running".postln;
+		});
 	}
 
 	*crawl { | initpath, depth = 0, server |
@@ -453,6 +524,9 @@ Convenience {
 			if(verbosePosts.asBoolean, {"removed /".postln; });
 			initpath = initpath[..initpath.size-2]
 		});
+
+		// clean out windows seperator
+		initpath = initpath.tr(Platform.pathSeparator , $/);
 
 		initPathDepth = PathName(initpath).fullPath.split($/).size;
 
@@ -530,9 +604,9 @@ Convenience {
 			if (news,{
 				folderPaths.keysValuesDo{ | key, path |
 					if (buffers.includesKey(key).not,{
-						"\nConvenience::crawl -> piping % and loading buffers".format(key).postln;
+						//"Convenience::crawl -> piping % to .load".format(key).postln;
 						this.load(path.asString, server);
-						"Convenience::crawl -> done piping and loading %".format(key).postln;
+						//"Convenience::crawl -> done piping and loading %".format(key).postln;
 
 					}, {
 						if (verbosePosts, {"Convenience::crawl -> nothing new to %".format(key).postln})
@@ -540,7 +614,7 @@ Convenience {
 				};
 
 			}, {
-				"Convenience::crawl -> new folders not found".postln;
+				"Convenience::crawl -> no folders that have not already been loaded".postln;
 			});
 
 
@@ -554,12 +628,12 @@ Convenience {
 				}
 			)};
 
-		}, {"crawler did not find any wav/aif/flac files".postln;});
+		}, {"Convenience::crawl -> no folder paths".postln;});
 	}
 
 	*load { | path, server |
 		var folder = PathName(path);
-		var files, loadedBuffers, folderKey;
+		var files, loadedBuffers = [], folderKey;
 		folderKey = this.prKeyify(folder.folderName);
 
 		server = server ? Server.default;
@@ -596,32 +670,38 @@ Convenience {
 			}; // this func is possibly really prParseFolders' responsibility
 
 			//"files: %".format(files).postln;
+			if (files.size > 0, {
+				loadedBuffers = files.collect { | file |
+					var numChannels;
+					working = true;
 
-			loadedBuffers = files.collect { | file |
-				var numChannels;
-				working = true;
+					//server.sync;
+					// use this to get numChannels of file "before" it read into buffer
+					//numChannels = SoundFile.use(file.fullPath, {arg qfile; qfile.numChannels});
+					server.sync;
 
-				//server.sync;
-				// use this to get numChannels of file "before" it read into buffer
-				//numChannels = SoundFile.use(file.fullPath, {arg qfile; qfile.numChannels});
-				server.sync;
+					if(verbosePosts.asBoolean,{
+						"reading % channel from\n\t %".format(numChannels, file.fileName).postln;
+					});
 
-				if(verbosePosts.asBoolean,{
-					"reading % channel from\n\t %".format(numChannels, file.fileName).postln;
+					Buffer.readChannel(server, file.fullPath;, channels: [0]).normalize(0.99);
+					/*
+					Buffer.readChannel(server, file.fullPath,
+					channels: [numChannels.collect{arg i; i}].flat
+					//channels: [numChannels.collect{arg i; i}].flat.select{} // only select the chans we want
+					).normalize(0.99);
+					*/
+				};
+
+				if (working == true, {
+					working = false;
+					"Convenience::crawl -> done loading %".format(folderKey).postln;
 				});
-
-				Buffer.readChannel(server, file.fullPath;, channels: [0]).normalize(0.99);
-				/*
-				Buffer.readChannel(server, file.fullPath,
-				channels: [numChannels.collect{arg i; i}].flat
-				//channels: [numChannels.collect{arg i; i}].flat.select{} // only select the chans we want
-				).normalize(0.99);
-				*/
-			};
-
-			if (working == true, {
-				working = false;
+			}, {
+				"Convenience::crawl -> no sound files in %".format(folderKey).postln;
+				//files = nil;
 			});
+			
 
 			//"\n\t loadedBuffers from folder: % --> %".format(folder.folderName,loadedBuffers).postln;
 			//server.sync; // danger danger only working when used before boot use update here instead?
@@ -686,6 +766,8 @@ Convenience {
 				buffers.removeAt(folder);
 				"folder % is freed".format(folder).postln;
 				ConvenientListView.update
+			}, {
+				"there is no folder to free".postln;
 			});
 
 			// removing the absolute path to folder
@@ -835,7 +917,7 @@ Convenience {
 			"not all folders have been loaded yet, working on it".postln;
 		});
 
-		if (gui == true, {
+		if (gui.asBoolean == true, {
 			listWindow = ConvenientListView.open;
 		});
 	}

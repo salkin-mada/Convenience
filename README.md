@@ -13,8 +13,9 @@ It is a great tool for discovering surprising audio file mixtures.
 
 Convenience has a crawler method that can recursively go through a directory tree. And load buffers catalogued together in keys related to their placement in the tree.
 
-It can sequence between folders and files, while controlling playback position, pitch/rate, amplitude and pitch envelopes, fft-filtering and more.
+It can sequence between folders and files, while controlling playback position, pitch/rate, amplitude, chaining of effects and control fx parameters and more.
 Several Convenience sequencer/pattern instances can run side by side, as independent tracks.
+
 It is Pattern Class based so you can do your usual pattern grub but with obvious limitations in regard to the more demanding Pattern Class usages.
 
 It can load and remove buffer groups (folders of audio files) while playing.
@@ -31,8 +32,11 @@ simple, facile, effortless, obvious, apparent, clear, uncomplicated, elementary,
 It is plain sailing and easy as pie
 
 ## Installation
+clone this repository to your `Platform.userExtensionDir`
 
-In SuperCollider, evaluate the following code to install it as a quark: 
+or
+
+In SuperCollider, evaluate the following code to install it as a Quark: 
 
 ```scd
 Quarks.install("https://github.com/salkin-mada/Convenience.git")

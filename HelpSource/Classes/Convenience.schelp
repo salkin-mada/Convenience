@@ -11,6 +11,7 @@ DESCRIPTION::
 
 A tool for discovering surprising audio file mixtures.
 
+please note that all methods are instance methods (there is only óne instance of Convenience)
 
 CLASSMETHODS::
 
@@ -21,11 +22,15 @@ crawler loads folders of files for you.
 
 METHOD:: p
 
-create a pattern sequencer and play it
+create a pattern sequencer and play it, this always holds a LeakDC and Limiter in the end of it's chain
 
 METHOD:: s
 
 stop pattern sequencer
+
+METHOD:: sall
+
+stop all pattern sequencers
 
 METHOD:: get
 
@@ -33,7 +38,7 @@ return Buffer at folderkey and index
 
 METHOD:: free
 
-free buffers
+free all buffers or just the specified one
 
 METHOD:: size
 
@@ -42,6 +47,7 @@ returns number of files loaded in total
 METHOD:: list
 posts loaded folder keys and number of files in them
 and returns a dictionary with folder keys and buffers
+if gui: true = a list view will open
 
 METHOD:: folders
 
@@ -51,44 +57,61 @@ METHOD:: randomFolder
 
 return random folder key
 
-
 METHOD:: folderNum
 
 returns folder key at dict key index, if you need to think in integers
 
+METHOD:: pfx
+
+add fx to a pattern sequencer
+
+METHOD:: pp
+
+get or set parameter (pattern)
+
+METHOD:: fade
+
+set fade time of pattern sequence and fxs
 
 
-
-INSTANCEMETHODS::
-
-
-
-PRIVATE:: Cnitconvenience, prSynthName
 
 EXAMPLES::
 
 CODE::
 
-z = Convenience;
-// or
-z = ZzzZzZzzzZz;
+// load some soundfiles with a gui -> crawler loads folders
+Convenience.crawl
 
-/* crawler loads folders in its way */
-z.crawl
+// no gui usage example
+// check your resource directory, it should have some default SC sounds
+Platform.resourceDir +/+ "sounds".openOS;
 
-// no gui usage
-z.crawl(Platform.resourceDir +/+ "sounds", depth: 0)
+// using that path we should load the folder called 'sounds'
+Convenience.crawl(Platform.resourceDir +/+ "sounds", depth: 0);
 
-z.folderPaths // ses what folderPaths crawler found
-s.boot;
-z.list // get some info of what went down after boot
+s.boot; 
+/* Convenience will only load files into ram if the server is running
+if you want to know what folders .crawl found before booting server use 'Convenience.folderPaths' to return a dictionary */
 
-//minimum
-z.p(\lay); // play at the beginning of first file in first folder
-z.s(\lay); // stop
+Convenience.list // post some info of what went down
+Convenience.list(gui: true) // or open a small gui window listing folders and buffer amounts
+Convenience.list(1); // same
 
-// play
-z.p(\lay,
+// free all buffers or free a specified folder
+Convenience.free
+Convenience.free(\sounds)
+
+
+//play some buffers - minimum is giving the .p method a name
+Convenience.p(\lay); // play at the beginning of first file in first folder with default duration and rate
+Convenience.s(\lay); // stop
+
+// post all arguments/parameters of Convenience.p
+Convenience.properties.do{|property| property.key.postln}
+
+// play with parameters
+(
+Convenience.p(\lay,
     tempo: 8.0,
     folder: \sounds,
     index: Prand([1,2,3], inf),
@@ -98,31 +121,65 @@ z.p(\lay,
     pan: Pwhite(-0.65,0.65),
     amp: 0.4
 );
+)
 // slay
-z.s(\lay)
+Convenience.s(\lay)
 
-// pitchshift
+// load some more folders
+Convenience.crawl
+
+// pitchshift a random folder
 (
-z.p(\ps,
+Convenience.p(\psrand,
 	tempo: 145/60*4,
 	tuningOnOff: 1,
 	degree: Pseq([1,4,6,9], inf),
 	octave: Pseq([5,6,7], inf),
 	pitchShiftOnOff: 1,
-	pitchRatio: Pwhite(0.2,0.5),
+	pitchRatio: Pwhite(2.2,4.5),
 	formantRatio: Pwhite(0.8,5.2),
-	folder: z.randomFolder.postln;,
+	folder: Convenience.randomFolder.postln,
 	index: Pwhite(1,100).floor,
-	cutoff: Psrp(0.01623).linexp(-1.0,1.0,100,1e3),
-	pos: Pwhite(0.2,0.7),
+	cutoff: Pwhite(500,12000),
+	res: 0.5,
+	ftype: Prand([0,1], inf),
+	pos: 0,
 	dur: Pseq([1,1,1,1,1,1,Rest(3),1,1,1,Rest(5)], inf),
 	rate: Pwhite(0.9,1.0) * Pstep([0.4,0.9,0.2], Prand([3,5,8], inf), inf)+3,
 	pan: Pwhite(-0.65,0.65),
 	amp: 0.4,
-	release: 7.0
+	release: 2.0
 );
 )
 
-z.s(\ps);
+// change the filter resonans, degree and tempo param on the fly
+Convenience.pp(\psrand, 'res', 0.96);
+Convenience.pp(\psrand, 'res', Pseq([0.5,0.75,0.9,0.2], inf));
+Convenience.pp(\psrand, 'degree', 1);
+Convenience.pp(\psrand, 'tempo', 5);
+
+//add some more fxs to it (this part is heavily inpired by the Sleet Quark and SuperDirt
+(
+Convenience.pfx(\psrand, [\delay, \flanger],
+	\wet1, 0.2,
+	\delay, Pwhite(0.2, 0.8),
+	\delayfb, Pseq([0.1,0.4,0.8], inf),
+	\wet2, Pseq((1..50)/50, inf).trace,
+	\flangdelay, 0.99,
+	\flangdepth, 0.1,
+	\flangrate, 0.9,
+	\flangfb, 0.6
+);
+)
+
+Convenience.s(\psrand); // stop
+Convenience.clear(\psrand); // house keeping -> free and clear all fxs associated with 'psrand'
+
+// list all fxs in the Convenience system
+Convenience.fxs
+// list all param arguments of a specific fx
+Convenience.fxargs(\flanger)
+
+// for further examples check the class overview
 
 ::
