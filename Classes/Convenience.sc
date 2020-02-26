@@ -12,6 +12,7 @@ Convenience {
 	classvar listWindow;
 
 	classvar working = false;
+	classvar <>loading;
 
 	const <supportedExtensions = #[\wav, \wave, \aif, \aiff, \flac];
 
@@ -21,6 +22,7 @@ Convenience {
 		folderPaths = Dictionary.new;
 		patterns = IdentitySet.new;
 		loadFn = #{ | server | Convenience.prPipeFoldersToLoadFunc(server) };
+		loading = Condition.new;
 		this.prAddEventType;
 		"\nConvenience is possible".postln;
 		if (suggestions, {
@@ -85,9 +87,11 @@ Convenience {
 		sustain=1.0, release = 0.5, tempo, tuningOnOff = 0,
 		basefreq = 440, pitchShiftOnOff = 0, pitchRatio = 1.0, formantRatio = 1.0 |
 
-		var properties, pdefnProperties = List.new;
+		var properties, pdefnProperties = List.new, spatProxyArray;
 
 		properties = Dictionary.with(*this.properties.collect{arg item; item});
+
+		spatProxyArray = Array.with(*spatProxy);
 
 		if (ConvenientCatalog.synthsBuild, {
 			if(name.isNil,{"needs a key aka name, please".throw; ^nil});
@@ -205,7 +209,10 @@ Convenience {
 				Ndef(name).source = Pdef(name);
 				Ndef(name).reshaping = \elastic;
 				Ndef(name).mold(numChannels);
-				Ndef(name).playSpat(spatProxyPath: spatProxy.asSymbol);
+				spatProxyArray.do{arg entry;
+					Ndef(name).playSpat(entry.asSymbol);
+				};
+				//Ndef(name).playSpat(spatProxyPath: spatProxy.asSymbol);
 			}, {
 				if((numChannels == Ndef(name).numChannels).not, {
 					Ndef(name).mold(numChannels);
@@ -227,16 +234,22 @@ Convenience {
 	*s { | name, fadeTime = 1 ...args |
 		if (name.isNil.not and: patterns.includes(name.asSymbol), {
 			Ndef(name).source.clear; // aka Pdef(name).stop
-			Ndef(name).stop(fadeTime);
+			Ndef(name).free(fadeTime); // changed from .stop(fadeTime) to .free(fadeTime) to make Ndef(name).isPlaying work as expected
 			patterns.remove(name.asSymbol);
 		}, {
-			"Convenience:: .s not a running pattern".postln
+			"Convenience:: .s % not a running pattern".format(name).postln
 		})
 
 	}
 
-	*ss { | name, spatProxy ...args |
-		Ndef(name).stopSpat(spatProxy.asSymbol);
+	// remove spat proxy routing
+	*rs { | name, spatProxy ...args |
+		var spatProxyArray;
+		spatProxyArray = Array.with(*spatProxy);
+		spatProxyArray.do{arg entry;
+			Ndef(name).stopSpat(entry.asSymbol);
+		};
+		// Ndef(name).stopSpat(spatProxy.asSymbol);
 	}
 
 	*sall { | fadeTime = 1 |
@@ -273,7 +286,6 @@ Convenience {
 		fxList = Array.with(*fxs);
 		chainSize = fxList.size;
 
-
 		//"fxs: %".format(fxList).postln;
 		//args.do{arg i; i.asSymbol.postln};
 
@@ -299,19 +311,13 @@ Convenience {
 			//"chainSize: %".format(chainSize).postln;
 
 			chainSize.do{ | i |
-				///// not working value.calss,.  how to get fx key??? hmm..
-				//if ((Ndef((name.asString).asSymbol)[i+1].value.class == fxs[i]).not, {
-					//fxList[i].postln;
-
-
-					if (ConvenientCatalog.fxlist.includesKey(fxList[i].asSymbol), {
-						// important to iterate from 1
-						// first fx should not be Ndef(\name)[0]
-						Ndef(name)[i+1] = \filter -> ConvenientCatalog.getFx(fxList[i].asSymbol);
-					}, {
-						"Convenience:: fx: % does not exist".format(fxList[i]).postln
-					})
-				//})
+				if (ConvenientCatalog.fxlist.includesKey(fxList[i].asSymbol), {
+					// important to iterate from 1
+					// first fx should not be Ndef(\name)[0]
+					Ndef(name)[i+1] = \filter -> ConvenientCatalog.getFx(fxList[i].asSymbol);
+				}, {
+					"Convenience:: fx: % does not exist".format(fxList[i]).postln
+				})
 			};
 
 			// default add dc filter
@@ -511,6 +517,7 @@ Convenience {
 			if (news,{
 				folderPaths.keysValuesDo{ | key, path |
 					if (buffers.includesKey(key).not,{
+						
 						"\nConvenience::crawl -> piping % and loading buffers".format(key).postln;
 						this.load(path.asString, server);
 						"Convenience::crawl -> done piping and loading %".format(key).postln;
@@ -544,7 +551,6 @@ Convenience {
 		folderKey = this.prKeyify(folder.folderName);
 
 		server = server ? Server.default;
-
 
 		//{ // routine -> load files into buffers
 		// check that folderKey does not already exist
@@ -591,7 +597,7 @@ Convenience {
 					"reading % channel from\n\t %".format(numChannels, file.fileName).postln;
 				});
 
-				Buffer.readChannel(server, file.fullPath;, channels: [0]).normalize(0.99);
+				Buffer.readChannel(server, file.fullPath, channels: [0]).normalize(0.99);
 				/*
 				Buffer.readChannel(server, file.fullPath,
 					channels: [numChannels.collect{arg i; i}].flat
@@ -602,6 +608,9 @@ Convenience {
 
 			if (working == true, {
 				working = false;
+				loading.test = true;
+				loading.signal;
+				"########################".postln;
 			});
 
 			//"\n\t loadedBuffers from folder: % --> %".format(folder.folderName,loadedBuffers).postln;
