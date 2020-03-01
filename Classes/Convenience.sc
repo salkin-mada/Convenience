@@ -242,13 +242,13 @@ Convenience {
 		patterns.do{arg name;
 			Ndef(name.asSymbol).source.clear;
 			Ndef(name.asSymbol).stop(fadeTime);
-			patterns.remove(name.asSymbol);
 		};
 		inputs.do{arg name;
 			Ndef(name.asSymbol).free;
 			Ndef(name.asSymbol).clear;
-			inputs.remove(name.asSymbol);
-		}
+		};
+		patterns.clear;
+		inputs.clear;
 	}
 
 	*clear { | name ...args |
