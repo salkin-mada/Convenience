@@ -48,7 +48,7 @@ ConvenientListView : View {
 
     *makeList {
         var dragSourceStringColor = Color.fromHexString("#4A304A");
-        Convenience.bufferKeys.do{ | key |
+        Convenience.bufferKeys.asArray.sort.do{ | key |
 				var gradientStartPoint = Point(200.rand,200.rand);
 				var gradientEndPoint = Point(200.rand,200.rand);
                 var dragSource;
