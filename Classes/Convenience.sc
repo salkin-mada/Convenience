@@ -276,6 +276,10 @@ Convenience {
 		this.fxs.keysValuesDo{arg type, fxs; "\n%".format(type).postln; fxs.keysDo{arg fx; "\t%".format(fx).postln}}
 	}
 
+	*listAllFxsAndArgs {
+		this.fxs.keysValuesDo{arg type, fxs; "\n%".format(type).postln; fxs.keysDo{arg fx; "\t%".format(fx).postln; "\t\t%".format(this.fxargs(fx)).postln;}}
+	}
+
 	*fxargs { | fxname |
 		if (ConvenientCatalog.fxsynthsBuild.not, {
 			ConvenientCatalog.addFxs(numFxChannels);
