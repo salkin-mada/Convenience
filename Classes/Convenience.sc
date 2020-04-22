@@ -234,7 +234,8 @@ Convenience {
 	*s { | name, fadeTime = 1 ...args |
 		if (name.isNil.not and: patterns.includes(name.asSymbol), {
 			Ndef(name).source.clear; // aka Pdef(name).stop
-			Ndef(name).free(fadeTime); // changed from .stop(fadeTime) to .free(fadeTime) to make Ndef(name).isPlaying work as expected
+			Ndef(name).stop(fadeTime);
+			Ndef(name).free(fadeTime); // .free(fadeTime) to make Ndef(name).isPlaying work as expected
 			patterns.remove(name.asSymbol);
 		}, {
 			"Convenience:: .s % not a running pattern".format(name).postln
@@ -269,6 +270,10 @@ Convenience {
 			ConvenientCatalog.addFxs(numFxChannels);
 		});
 		^ConvenientCatalog.fxmodules;
+	}
+
+	*listAllFxs {
+		this.fxs.keysValuesDo{arg type, fxs; "\n%".format(type).postln; fxs.keysDo{arg fx; "\t%".format(fx).postln}}
 	}
 
 	*fxargs { | fxname |
@@ -520,12 +525,20 @@ Convenience {
 						
 						"\nConvenience::crawl -> piping % and loading buffers".format(key).postln;
 						this.load(path.asString, server);
-						"Convenience::crawl -> done piping and loading %".format(key).postln;
+						//"Convenience::crawl -> done piping and loading %".format(key).postln;
 
 					}, {
 						if (verbosePosts, {"Convenience::crawl -> nothing new to %".format(key).postln})
 					})
 				};
+				////// loaded all news
+				if (working == true, {
+					working = false;
+					loading.test = true;
+					loading.signal;
+					"########################".postln;
+					"########################\n".postln;
+				});
 
 			}, {
 				"Convenience::crawl -> new folders not found".postln;
@@ -606,13 +619,6 @@ Convenience {
 				*/
 			};
 
-			if (working == true, {
-				working = false;
-				loading.test = true;
-				loading.signal;
-				"########################".postln;
-			});
-
 			//"\n\t loadedBuffers from folder: % --> %".format(folder.folderName,loadedBuffers).postln;
 			//server.sync; // danger danger only working when used before boot use update here instead?
 			//"loading into memory, hang on".postln;
@@ -625,7 +631,8 @@ Convenience {
 					});
 					//  add and remove spaces in folder name
 					buffers.add(folderKey -> loadedBuffers);
-					ConvenientListView.update
+					ConvenientListView.update;
+					"Convenience::crawl -> done loading %".format(folderKey).postln;
 				})
 			}, {
 				//"no soundfiles in : %, skipped".format(folder.folderName).postln;
