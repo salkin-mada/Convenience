@@ -91,7 +91,13 @@ Convenience {
 
 		properties = Dictionary.with(*this.properties.collect{arg item; item});
 
-		spatProxyArray = Array.with(*spatProxy);
+		if (spatProxy.isNil.not, {
+			spatProxyArray = Array.with(*spatProxy);
+		}, {
+			"Convenience:: spatProxyPath is empty! abort".warn;
+			^nil
+		});
+
 
 		if (ConvenientCatalog.synthsBuild, {
 			if(name.isNil,{"needs a key aka name, please".throw; ^nil});
