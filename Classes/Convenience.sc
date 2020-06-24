@@ -538,7 +538,7 @@ Convenience {
 						//"Convenience::crawl -> done piping and loading %".format(key).postln;
 
 					}, {
-						if (verbosePosts, {"Convenience::crawl -> nothing new to %".format(key).postln})
+						if (verbosePosts, {"Convenience::crawl -> nothing new to %".format(key).postln});
 					})
 				};
 				////// loaded all news
@@ -552,6 +552,8 @@ Convenience {
 
 			}, {
 				"Convenience::crawl -> new folders not found".postln;
+				loading.test = true;
+				loading.signal;
 			});
 
 
