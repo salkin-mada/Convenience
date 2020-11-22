@@ -484,7 +484,7 @@ Convenience {
 			Ndef(name.asSymbol).fadeTime_(fadeTime); // ndef
 		});
 		
-		if (patterns.includes(name.asSymbol).not or: inputs.includes(name.asSymbol).not, {
+		if (patterns.includes(name.asSymbol).not and: inputs.includes(name.asSymbol).not, {
 			"Convenience:: pattern/module not running".postln;
 		});
 	}
