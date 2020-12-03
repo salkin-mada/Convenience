@@ -13,7 +13,7 @@ Convenience {
 
 	classvar working = false;
 
-	const <supportedExtensions = #[\wav, \wave, \aif, \aiff, \flac];
+	const <supportedExtensions = #[\wav, \wave, \aif, \aiff, \flac, \ogg];
 
 	*initClass { | server |
 		server = server ? Server.default;
