@@ -79,7 +79,7 @@ Convenience {
 		]
 	}
 
-	*p { | name, bus = 0, numChannels = 2, type=\Convenience, out = 0, folder, index = 1, dur = 4, stretch = 1.0,
+	*p { | name, bus = 0, numChannels = 2, type=\Convenience, /*out = 0,*/ folder, index = 1, dur = 4, stretch = 1.0,
 		pos = 0, loop = 0, rate = 1, degree = 0, octave = 3, root = 0, scale,
 		cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0, pan = 0,
 		width = 2.0, spread = 0.5, amp = 0.5, attack = 0.01,
@@ -129,9 +129,10 @@ Convenience {
 			properties.keysValuesChange { | key, value |
 				switch(key)
 				{\name}{name}
+				{\bus}{bus}
 				{\numChannels}{numChannels}
 				{\type}{type}
-				{\out}{out}
+				//{\out}{out}
 				{\folder}{folder}
 				{\index} {index}
 				{\dur} {dur}
@@ -263,7 +264,7 @@ Convenience {
 				inputs.remove(name.asSymbol);
 			});
 		}, {
-			"Convenience:: .s not a running Convenience pattern/module".postln
+			"Convenience:: {}.s not a running Convenience pattern/module".format(name).postln
 		})
 
 	}
