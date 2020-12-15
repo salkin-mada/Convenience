@@ -85,8 +85,10 @@ Convenience.crawl
 // no gui usage example
 // check your resource directory, it should have some default SC sounds
 Platform.resourceDir +/+ "sounds".openOS;
-
-// using that path we should load the folder called 'sounds'
+// if this does'nt work due to some xdg poorness etc.
+// check with this
+PathName(Platform.resourceDir+/+"sounds").entries.do{|f|"\tsoundfile - %".format(f.fileName).postln}
+// using that path we should be able to load the folder called 'sounds'
 Convenience.crawl(Platform.resourceDir +/+ "sounds", depth: 0);
 
 s.boot; 

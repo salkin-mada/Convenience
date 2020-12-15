@@ -1,13 +1,31 @@
 // in addition to the help file code example
 
 //Use Convenience as a Buffer Class
-play{PlayBuf.ar(1, Convenience.get(\sounds, 1), 0.41)}
+play{PlayBuf.ar(1, Convenience.get(\sounds, 0), 0.41)}
 
+
+// load some soundfiles and play some buffers
+(
+z= Convenience;
+fork{
+	z.clearAll
+	if(PathName(Platform.resourceDir +/+ "sounds").entries.isEmpty.not, {
+		z.crawl(Platform.resourceDir +/+ "sounds");
+		"sound will appear in 5 seconds".postln;
+		5.reverseDo{|i|
+			(i+1).asString.postln;
+			1.wait;
+		};
+		play{PlayBuf.ar(1, Convenience.get(\sounds, 0), 0.41. loop:1)*0.5}
+		play{PlayBuf.ar(1, Convenience.get(\sounds, 1), 0.62, loop:1)*0.5}
+		play{PlayBuf.ar(1, Convenience.get(\sounds, 2), [0.123, 0.234, 0.345], loop:1)*0.5}
+	}, {
+		"somethings wrong with the resource directory".warn;
+	});
+}
+)
 
 // reference parameter values (simple numbers and patterns)
-z.clearAll
-z= Convenience;
-z.crawl("C:/Program Files/SuperCollider-3.10.4-rc1/sounds");
 (
 z.p(\numberOne,
 	dur: 2, tuningOnOff:1, degree: Pseq([1,5,9], inf), octave: 5, ftype: 1, fgain: 2, cutoff: Pwhite(800,6100), attack: 0.01, sustain: 0.1, release: 0.1, tempo: 8,

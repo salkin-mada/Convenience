@@ -1,15 +1,15 @@
-~numChannels = 4;
+~numMaxChannels = 4; // how many channels should Convenience support
 /*	  --------------------------------------  */
 /*	  rate style							 */
 /*	  ------------------------------------- */
-~numChannels.do{arg channels;
+~numMaxChannels.do{arg channels;
 	channels = channels + 1;
 	
 	"Convenience:: building % channel output synths".format(channels).postln;
 	
 	SynthDef(("ConvenienceMono_"++channels).asSymbol, {
 		|
-		bufnum, out = 0, loop = 0, rate = 1, pan = 0, spread = 0.5, width = 2, amp = 0.5,
+		bufnum, bus = 0, loop = 0, rate = 1, pan = 0, spread = 0.5, width = 2, amp = 0.5,
 		attack = 0.01, sustain = 0.5, release = 1.0, pos = 0,
 		gate = 1, cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0.0
 		|
@@ -29,14 +29,14 @@
 		sig = sig + (LPF.ar(sig, 100, bass));
 		sig = SplayAz.ar(channels, sig, spread: spread, center: pan, level: amp);
 		sig = LeakDC.ar(sig);
-		Out.ar(out, (sig*env));
+		Out.ar(bus, (sig*env));
 	}).add;
 	
 	////server.sync;
 	
 	SynthDef(("ConvenienceStereo_"++channels).asSymbol, {
 		|
-		bufnum, out = 0, loop = 0, rate = 1, pan = 0, spread = 0.5, width = 2, amp = 0.5,
+		bufnum, bus = 0, loop = 0, rate = 1, pan = 0, spread = 0.5, width = 2, amp = 0.5,
 		attack = 0.01, sustain = 0.5, release = 1.0, pos = 0,
 		gate = 1, cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0.0
 		|
@@ -56,7 +56,7 @@
 		sig = sig + (LPF.ar(sig, 100, bass));
 		sig = SplayAz.ar(channels, sig, spread: spread, center: pan, level: amp);
 		sig = LeakDC.ar(sig);
-		Out.ar(out, (sig*env));
+		Out.ar(bus, (sig*env));
 	}).add;
 	
 	////server.sync;
@@ -66,7 +66,7 @@
 	/*	  ------------------------------------- */
 	SynthDef(("ConvenienceMonoScale_"++channels).asSymbol, {
 		|
-		bufnum, out = 0, loop = 0, pan = 0, spread = 0.5, width = 2, amp = 0.5,
+		bufnum, bus = 0, loop = 0, pan = 0, spread = 0.5, width = 2, amp = 0.5,
 		attack = 0.01, sustain = 0.5, release = 1.0, pos = 0,
 		gate = 1, cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0.0, basefreq=440, freq
 		|
@@ -87,14 +87,14 @@
 		sig = sig + (LPF.ar(sig, 100, bass));
 		sig = SplayAz.ar(channels, sig, spread: spread, center: pan, level: amp);
 		sig = LeakDC.ar(sig);
-		Out.ar(out, (sig*env));
+		Out.ar(bus, (sig*env));
 	}).add;
 	
 	////server.sync;
 	
 	SynthDef(("ConvenienceStereoScale_"++channels).asSymbol, {
 		|
-		bufnum, out = 0, loop = 0, pan = 0, spread = 0.5, width = 2, amp = 0.5,
+		bufnum, bus = 0, loop = 0, pan = 0, spread = 0.5, width = 2, amp = 0.5,
 		attack = 0.01, sustain = 0.5, release = 1.0, pos = 0,
 		gate = 1, cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0.0, basefreq=440, freq
 		|
@@ -115,7 +115,7 @@
 		sig = sig + (LPF.ar(sig, 100, bass));
 		sig = SplayAz.ar(channels, sig, spread: spread, center: pan, level: amp);
 		sig = LeakDC.ar(sig);
-		Out.ar(out, (sig*env));
+		Out.ar(bus, (sig*env));
 	}).add;
 	
 	////server.sync;
@@ -185,9 +185,9 @@
 	
 	SynthDef(("ConveniencePitchShift_"++channels).asSymbol, {
 		|
-		bufnum, out = 0, loop = 0, rate = 1, pan = 0, spread = 0.5, width = 2, amp = 0.5,
+		bufnum, bus = 0, loop = 0, rate = 1, pan = 0, spread = 0.5, width = 2, amp = 0.5,
 		attack = 0.01, sustain = 0.5, release = 1.0, pos = 0,
-		gate = 1, cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0.0, pitchRatio = 1.0, formantRatio = 1.0
+		gate = 1, cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0.0, pr = 1.0, fr = 1.0
 		|
 		var sig, key, frames, env, file;
 		frames = BufFrames.kr(bufnum);
@@ -204,14 +204,14 @@
 		sig = ConvenientPitchShiftPA.ar(
 			sig,
 			Pitch.kr(sig)[0], //pitch tracking
-			pitchRatio,
-			formantRatio
+			pr,
+			fr
 		);
 		sig = DFM1.ar(in: sig, freq: cutoff, res: res, inputgain: fgain, type: ftype);
 		sig = sig + (LPF.ar(sig, 100, bass));
 		sig = SplayAz.ar(channels, sig, spread: spread, center: pan, level: amp);
 		sig = LeakDC.ar(sig);
-		Out.ar(out, (sig*env));
+		Out.ar(bus, (sig*env));
 		
 	}).add;
 	
@@ -219,10 +219,10 @@
 	
 	SynthDef(("ConveniencePitchShiftScale_"++channels).asSymbol, {
 		|
-		bufnum, out = 0, loop = 0, pan = 0, spread = 0.5, width = 2, amp = 0.5,
+		bufnum, bus = 0, loop = 0, pan = 0, spread = 0.5, width = 2, amp = 0.5,
 		attack = 0.01, sustain = 0.5, release = 1.0, pos = 0,
 		gate = 1, cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0.0, basefreq=440, freq,
-		pitchRatio = 1.0, formantRatio = 1.0
+		pr = 1.0, fr = 1.0
 		|
 		var sig, rate, frames, env, file;
 		frames = BufFrames.kr(bufnum);
@@ -240,14 +240,14 @@
 		sig = ConvenientPitchShiftPA.ar(
 			sig,
 			Pitch.kr(sig)[0], //pitch tracking
-			pitchRatio,
-			formantRatio
+			pr,
+			fr
 		);
 		sig = DFM1.ar(in: sig, freq: cutoff, res: res, inputgain: fgain, type: ftype);
 		sig = sig + (LPF.ar(sig, 100, bass));
 		sig = SplayAz.ar(channels, sig, spread: spread, center: pan, level: amp);
 		sig = LeakDC.ar(sig);
-		Out.ar(out, (sig*env));
+		Out.ar(bus, (sig*env));
 		
 	}).add;
 	
