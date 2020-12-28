@@ -27,7 +27,7 @@
 		FreeSelf.kr(TDelay.kr(Done.kr(env),0.1));
 		sig = DFM1.ar(in: sig, freq: cutoff, res: res, inputgain: fgain, type: ftype);
 		sig = sig + (LPF.ar(sig, 100, bass));
-		sig = SplayAz.ar(channels, sig, spread: spread, center: pan, level: amp);
+		sig = SplayAz.ar(channels, sig, spread: spread, width: width, center: pan, level: amp);
 		sig = LeakDC.ar(sig);
 		Out.ar(bus, (sig*env));
 	}).add;
@@ -54,7 +54,7 @@
 		FreeSelf.kr(TDelay.kr(Done.kr(env),0.1));
 		sig = DFM1.ar(in: sig, freq: cutoff, res: res, inputgain: fgain, type: ftype);
 		sig = sig + (LPF.ar(sig, 100, bass));
-		sig = SplayAz.ar(channels, sig, spread: spread, center: pan, level: amp);
+		sig = SplayAz.ar(channels, sig, spread: spread, width: width, center: pan, level: amp);
 		sig = LeakDC.ar(sig);
 		Out.ar(bus, (sig*env));
 	}).add;
@@ -85,7 +85,7 @@
 		FreeSelf.kr(TDelay.kr(Done.kr(env),0.1));
 		sig = DFM1.ar(in: sig, freq: cutoff, res: res, inputgain: fgain, type: ftype);
 		sig = sig + (LPF.ar(sig, 100, bass));
-		sig = SplayAz.ar(channels, sig, spread: spread, center: pan, level: amp);
+		sig = SplayAz.ar(channels, sig, spread: spread, width: width, center: pan, level: amp);
 		sig = LeakDC.ar(sig);
 		Out.ar(bus, (sig*env));
 	}).add;
@@ -113,7 +113,7 @@
 		FreeSelf.kr(TDelay.kr(Done.kr(env),0.1));
 		sig = DFM1.ar(in: sig, freq: cutoff, res: res, inputgain: fgain, type: ftype);
 		sig = sig + (LPF.ar(sig, 100, bass));
-		sig = SplayAz.ar(channels, sig, spread: spread, center: pan, level: amp);
+		sig = SplayAz.ar(channels, sig, spread: spread, width: width, center: pan, level: amp);
 		sig = LeakDC.ar(sig);
 		Out.ar(bus, (sig*env));
 	}).add;
@@ -183,7 +183,7 @@
 	/*	  PitchShift            		synth	 */
 	/*	  ------------------------------------- */
 	
-	SynthDef(("ConveniencePitchShift_"++channels).asSymbol, {
+	SynthDef(("ConvenienceMonoPitchShift_"++channels).asSymbol, {
 		|
 		bufnum, bus = 0, loop = 0, rate = 1, pan = 0, spread = 0.5, width = 2, amp = 0.5,
 		attack = 0.01, sustain = 0.5, release = 1.0, pos = 0,
@@ -209,15 +209,45 @@
 		);
 		sig = DFM1.ar(in: sig, freq: cutoff, res: res, inputgain: fgain, type: ftype);
 		sig = sig + (LPF.ar(sig, 100, bass));
-		sig = SplayAz.ar(channels, sig, spread: spread, center: pan, level: amp);
+		sig = SplayAz.ar(channels, sig, spread: spread, width: width, center: pan, level: amp);
 		sig = LeakDC.ar(sig);
 		Out.ar(bus, (sig*env));
 		
 	}).add;
 	
-	//server.sync;
+	SynthDef(("ConvenienceStereoPitchShift_"++channels).asSymbol, {
+		|
+		bufnum, bus = 0, loop = 0, rate = 1, pan = 0, spread = 0.5, width = 2, amp = 0.5,
+		attack = 0.01, sustain = 0.5, release = 1.0, pos = 0,
+		gate = 1, cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0.0, pr = 1.0, fr = 1.0
+		|
+		var sig, key, frames, env, file;
+		frames = BufFrames.kr(bufnum);
+		sig = ConvenientBufferPlayer.ar(
+			2,
+			bufnum,
+			rate*BufRateScale.kr(bufnum),
+			1,
+			pos*frames,
+			loop: loop
+		);
+		env = EnvGen.ar(Env.linen(attack, sustain, release), gate);
+		FreeSelf.kr(TDelay.kr(Done.kr(env),0.1));
+		sig = ConvenientPitchShiftPA.ar(
+			sig,
+			Pitch.kr(sig)[0], //pitch tracking
+			pr,
+			fr
+		);
+		sig = DFM1.ar(in: sig, freq: cutoff, res: res, inputgain: fgain, type: ftype);
+		sig = sig + (LPF.ar(sig, 100, bass));
+		sig = SplayAz.ar(channels, sig, spread: spread, width: width, center: pan, level: amp);
+		sig = LeakDC.ar(sig);
+		Out.ar(bus, (sig*env));
+		
+	}).add;
 	
-	SynthDef(("ConveniencePitchShiftScale_"++channels).asSymbol, {
+	SynthDef(("ConvenienceMonoPitchShiftScale_"++channels).asSymbol, {
 		|
 		bufnum, bus = 0, loop = 0, pan = 0, spread = 0.5, width = 2, amp = 0.5,
 		attack = 0.01, sustain = 0.5, release = 1.0, pos = 0,
@@ -245,11 +275,43 @@
 		);
 		sig = DFM1.ar(in: sig, freq: cutoff, res: res, inputgain: fgain, type: ftype);
 		sig = sig + (LPF.ar(sig, 100, bass));
-		sig = SplayAz.ar(channels, sig, spread: spread, center: pan, level: amp);
+		sig = SplayAz.ar(channels, sig, spread: spread, width: width, center: pan, level: amp);
 		sig = LeakDC.ar(sig);
 		Out.ar(bus, (sig*env));
 		
 	}).add;
 	
-	//server.sync;
+	SynthDef(("ConvenienceStereoPitchShiftScale_"++channels).asSymbol, {
+		|
+		bufnum, bus = 0, loop = 0, pan = 0, spread = 0.5, width = 2, amp = 0.5,
+		attack = 0.01, sustain = 0.5, release = 1.0, pos = 0,
+		gate = 1, cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0.0, basefreq=440, freq,
+		pr = 1.0, fr = 1.0
+		|
+		var sig, rate, frames, env, file;
+		frames = BufFrames.kr(bufnum);
+		rate = freq/basefreq;
+		sig = ConvenientBufferPlayer.ar(
+			2,
+			bufnum,
+			rate*BufRateScale.kr(bufnum),
+			1,
+			pos*frames,
+			loop: loop
+		);
+		env = EnvGen.ar(Env.linen(attack, sustain, release), gate);
+		FreeSelf.kr(TDelay.kr(Done.kr(env),0.1));
+		sig = ConvenientPitchShiftPA.ar(
+			sig,
+			Pitch.kr(sig)[0], //pitch tracking
+			pr,
+			fr
+		);
+		sig = DFM1.ar(in: sig, freq: cutoff, res: res, inputgain: fgain, type: ftype);
+		sig = sig + (LPF.ar(sig, 100, bass));
+		sig = SplayAz.ar(channels, sig, spread: spread, width: width, center: pan, level: amp);
+		sig = LeakDC.ar(sig);
+		Out.ar(bus, (sig*env));
+		
+	}).add;
 }

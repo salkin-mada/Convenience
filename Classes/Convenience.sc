@@ -1,8 +1,8 @@
 Convenience {
 	// user config
-	classvar loadSynths = true; // should crawler auto load synths
-	classvar verbosePosts = false; // debug or interest
-	classvar suggestions = false; // you want some?
+	classvar >loadSynths = true; // should crawler auto load synths
+	classvar >verbosePosts = true; // debug or interest
+	classvar >suggestions = false; // you want some?
 	classvar <>numFxChannels = 2; // default number of fx channels
 
 	// private config
@@ -258,7 +258,7 @@ Convenience {
 					// Ndef(name).mold(numChannels).play(out: bus, group: nodegroup);
 					// Ndef(name).play(out: bus, group: Group(server));
 					Ndef(name).mold(numChannels).play(out: bus);
-					"start playin".postln;
+					"Convenience:: start playing %".format(name).postln;
 					server.sync;
 					server.reorder([Ndef(name)], Group(server));
 				};
@@ -284,9 +284,9 @@ Convenience {
 				// update quant
 				Pdef(name).quant_(quant);
 				Ndef(name).quant_(quant);
-				"already playingla".postln;
+					"Convenience:: % already playing".format(name).postln;
 				if(replay.asBoolean, {
-					"replaying /retrig".postln;
+					"Convenience:: retrig %".format(name).postln;
 					// Ndef(name).play(out: bus, numChannels: 2, group: nodegroup);
 					// Ndef(name).play(out: bus, group: nodegroup);
 					// Ndef(name).play(out: bus, group: Group(server));
@@ -699,6 +699,7 @@ Convenience {
 					if (verbosePosts, {"Convenience::crawl -> nothing new to %".format(key).postln})
 				})
 			};
+			if (verbosePosts, {"Convenience:: loading done".postln})
 
 		}, {
 			"Convenience::crawl -> no folders that have not already been loaded".postln;
@@ -764,20 +765,37 @@ Convenience {
 
 				//server.sync;
 				// use this to get numChannels of file "before" it read into buffer
-				//numChannels = SoundFile.use(file.fullPath, {arg qfile; qfile.numChannels});
+				numChannels = SoundFile.use(file.fullPath, {arg qfile; qfile.numChannels});
 				server.sync;
 
 				if(verbosePosts.asBoolean,{
-					"reading % channel from\n\t %".format(numChannels, file.fileName).postln;
+					"file: %\n\tcontains % chans".format(file.fileName, numChannels).postln;
 				});
 
-				Buffer.readChannel(server, file.fullPath;, channels: [0]).normalize(0.99);
-				/*
-				Buffer.readChannel(server, file.fullPath,
-					channels: [numChannels.collect{arg i; i}].flat
-					//channels: [numChannels.collect{arg i; i}].flat.select{} // only select the chans we want
-				).normalize(0.99);
-				*/
+				case
+				{numChannels == 1}
+				{
+					if(verbosePosts.asBoolean,{"convenience:: loading 1 channels".postln});
+					Buffer.readChannel(server, file.fullPath;, channels: [0]).normalize(0.99);
+				}
+				{numChannels == 2}
+				{
+					if(verbosePosts.asBoolean,{"convenience:: loading 2 channels".postln});
+					Buffer.readChannel(server, file.fullPath,
+						channels: [numChannels.collect{arg i; i}].flat
+						//channels: [numChannels.collect{arg i; i}].flat.select{} // only select the chans we want
+					).normalize(0.99);
+				}
+				{numChannels > 2}
+				{
+					if(verbosePosts.asBoolean,{"convenience:: loading 1 channels".postln});
+					Buffer.readChannel(server, file.fullPath;, channels: [0]).normalize(0.99);
+				}
+				{numChannels == 0}
+				{
+					if(verbosePosts.asBoolean,{"convenience:: does not understand file channel count".warn});
+					nil
+				};
 			};
 
 			if (working == true, {
@@ -798,7 +816,7 @@ Convenience {
 		if (loadedBuffers.isEmpty.not, {
 			if (buffers.includesKey(folderKey).not, {
 				if(verbosePosts.asBoolean,{
-					"added new folder as key: %".format(folderKey).postln;
+					"new folder key: %".format(folderKey).postln;
 				});
 				//  add and remove spaces in folder name
 				buffers.add(folderKey -> loadedBuffers);
@@ -1048,45 +1066,55 @@ Convenience {
 		// get instrument
 		case
 		{pitchshift == 1 and: scaling == 0} {
-			~instrument = ("ConveniencePitchShift_"++outputNumChannels).asSymbol;
-			// "PITCHSHIFT".postln;
+			switch(bufferNumChannels,
+				1, {
+					~instrument = ("ConvenienceMonoPitchShift_"++outputNumChannels).asSymbol;
+				},
+				2, {
+					~instrument = ("ConvenienceStereoPitchShift_"++outputNumChannels).asSymbol;
+				},
+				{
+					~instrument = ("ConvenienceMonoPitchShift_"++outputNumChannels).asSymbol;
+				}
+			);
 		}
 		{pitchshift == 1 and: scaling == 1} {
-			~instrument = ("ConveniencePitchShiftScale_"++outputNumChannels).asSymbol;
-			// "PITCHSHIFT+SCALING".postln;
+			switch(bufferNumChannels,
+				1, {
+					~instrument = ("ConvenienceMonoPitchShiftScale_"++outputNumChannels).asSymbol;
+				},
+				2, {
+					~instrument = ("ConvenienceStereoPitchShiftScale_"++outputNumChannels).asSymbol;
+				},
+				{
+					~instrument = ("ConvenienceMonoPitchShiftScale_"++outputNumChannels).asSymbol;
+				}
+			);
 		}
 		{scaling == 1 and: pitchshift == 0} {
-			// "SCALING".post;
 			switch(bufferNumChannels,
 				1, {
 					~instrument = ("ConvenienceMonoScale_"++outputNumChannels).asSymbol;
-					//"mono".postln;
 				},
 				2, {
 					~instrument = ("ConvenienceStereoScale_"++outputNumChannels).asSymbol;
-					//"stereo".postln;
 				},
 				{
 					~instrument = ("ConvenienceMonoScale_"++outputNumChannels).asSymbol;
-					//"mono-default".postln;
 				}
 			);
 
 		}
 		{
-			// "DEFAULT".post;
 			switch(bufferNumChannels,
 				1, {
 					~instrument = ("ConvenienceMono_"++outputNumChannels).asSymbol;
-					//"mono".postln;
 				},
 				2, {
 					~instrument = ("ConvenienceStereo_"++outputNumChannels).asSymbol;
-					//"stereo".postln;
 				},
 				{
 					~instrument = ("ConvenienceMono_"++outputNumChannels).asSymbol;
-					//"mono-default".postln;
 				}
 			);
 		};
