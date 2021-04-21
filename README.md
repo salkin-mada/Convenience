@@ -48,7 +48,7 @@ Opens a window where you can drag and drop folders + control "loading depth" i.e
 
 * `Convenience.crawl(path, depth)`
 
-Start crawling immediately from given path into its tree
+Start crawling immediately from given path and decent into its tree
 
 Both creates a dict of `Buffer`'s loaded with the audio files from the folders found in the given directory tree (path). 
 (please note that Convenience will load mono and stereo samples. If a given sound file has 3 or more channels. Channel[0] will be loaded.
