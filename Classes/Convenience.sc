@@ -1,7 +1,7 @@
 Convenience {
     // user config
     classvar >loadSynths = true; // should crawler auto load synths
-    classvar >verbosePosts = true; // debug or interest
+    classvar >verbosePosts = false; // debug or interest
     classvar >suggestions = false; // you want some?
     classvar <>numFxChannels = 2; // default number of fx channels
     classvar <>pattern_history_size = 100;
@@ -74,6 +74,7 @@ Convenience {
             'index' -> 0,
             'dur' -> 4,
             'stretch' -> 1.0,
+            'timingOffset' -> 0.0,
             'pos' -> 0,
             'loop' -> 0,
             'rate' -> 1,
@@ -102,12 +103,11 @@ Convenience {
         ]
     }
 
-    *p { | name, bus = 0, numChannels= 2, type=\Convenience, seed=666, quant= 0, folder, index= 0, dur= 4, stretch= 1.0,
-        pos= 0, loop= 0, rate= 1, degree= 0, octave= 3, root= 0, scale,
-        cutoff= 22e3, res= 0.01, fgain= 1.0, ftype= 0, bass = 0, pan= 0,
-        width= 2.0, spread= 0.5, amp= 0.5, attack= 0.01,
-        sustain=1.0, release= 0.5, tempo, tuningOnOff= 0,
-        basefreq= 440, pst= 0, pr= 1.0, fr= 1.0, replay= 1, server ...args |
+    *p { | name, bus = 0, numChannels= 2, type=\Convenience, seed=666, quant= 0, folder, index= 0, dur= 4,
+        timingOffset = 0, stretch= 1.0, pos= 0, loop= 0, rate= 1, degree= 0, octave= 3, root= 0, scale,
+        cutoff= 22e3, res= 0.01, fgain= 1.0, ftype= 0, bass = 0, pan= 0, width= 2.0, spread= 0.5, amp= 0.5,
+        attack= 0.01, sustain=1.0, release= 0.5, tempo, tuningOnOff= 0, basefreq= 440, pst= 0, pr= 1.0, fr= 1.0,
+        replay= 1, server ...args |
 
         var properties, pdefnProperties = List.new;
         properties = Dictionary.with(*this.properties.collect{arg item; item});
@@ -170,6 +170,7 @@ Convenience {
                 {\folder}{folder}
                 {\index} {index}
                 {\dur} {dur}
+                {\timingOffset} {timingOffset}
                 {\stretch} {stretch}
                 {\pos} {pos}
                 {\loop} {loop}
@@ -333,154 +334,154 @@ Convenience {
     }
 
     *repeat { | name, min=0, max=5, repeats = inf |
-    var slice_of_history = patterns_history[name].copyRange(min, max);
-    Pdef(name, Pbind(*slice_of_history.flopDict(unbubble:false).collect{|x| Pseq(x, repeats)}.asKeyValuePairs));
-}
-
-*s { | name, fadeTime = 1 ...args |
-    if (name.isNil.not and: patterns.includes(name.asSymbol), {
-        Ndef(name).source.clear; // aka Pdef(name).stop
-        // Ndef(name).stop(fadeTime);
-        Ndef(name).free(fadeTime);
-        // Ndef(name).clear(fadeTime);
-        patterns.remove(name.asSymbol);
-    }, {
-        "Convenience:: .s not a running pattern".postln
-    });
-    if (name.isNil.not and: inputs.includes(name.asSymbol), {
-        Ndef(name).source.clear; // aka Pdef(name).stop
-        Ndef(name).free(fadeTime);
-        // Ndef(name).clear(fadeTime);
-        inputs.remove(name.asSymbol);
-    })
-}
-
-*sall { | fadeTime = 1 |
-    patterns.do{arg name;
-        Ndef(name.asSymbol).source.clear; // aka Pdef(name).stop
-        Ndef(name.asSymbol).free(fadeTime);
-    };
-    inputs.do{arg name;
-        Ndef(name.asSymbol).free(fadeTime);
-        // Ndef(name.asSymbol).clear;
-    };
-    patterns.clear;
-    inputs.clear;
-}
-
-*clear { | name ...args |
-    if (name.isNil.not and: patterns.includes(name.asSymbol) or: inputs.includes(name.asSymbol), {
-        Ndef(name).source.clear; // aka Pdef(name).stop
-        Ndef(name).free;
-        Ndef(name).clear;
-        if (patterns.includes(name.asSymbol), {
-            patterns.remove(name.asSymbol);
-        });
-        if (inputs.includes(name.asSymbol), {
-            inputs.remove(name.asSymbol);
-        });
-    }, {
-        "Convenience:: {}.s not a running Convenience pattern/module".format(name).postln
-    })
-
-}
-
-*clearAll {
-    patterns.do{arg name;
-        Ndef(name.asSymbol).source.clear;
-        Ndef(name.asSymbol).free;
-        Ndef(name.asSymbol).clear;
-        patterns.remove(name.asSymbol);
-    };
-    inputs.do{arg name;
-        Ndef(name.asSymbol).source.clear;
-        Ndef(name.asSymbol).free;
-        Ndef(name.asSymbol).clear;
-        inputs.remove(name.asSymbol);
+        var slice_of_history = patterns_history[name].copyRange(min, max);
+        Pdef(name, Pbind(*slice_of_history.flopDict(unbubble:false).collect{|x| Pseq(x, repeats)}.asKeyValuePairs));
     }
-}
 
-*tempo { | name, from, to, secs = 0 |
-
-}
-
-*fxs {
-    this.addFxSynths(numFxChannels);
-    ^ConvenientCatalog.fxmodules;
-}
-
-*fxargs { | fxname |
-    this.addFxSynths(numFxChannels);
-    ^ConvenientCatalog.getFx(fxname.asSymbol).argNames.reject(_ == 'in');
-}
-
-*pfx { | name, fxs /*, out = #[0,1],  server*/ ...args |
-var fxList, chainSize;
-
-//server = server ? Server.default;
-
-fxList = Array.with(*fxs);
-chainSize = fxList.size;
-
-
-//"fxs: %".format(fxList).postln;
-//args.do{arg i; i.asSymbol.postln};
-
-if ((chainSize > 0) and: name.isNil.not and: fxs.isNil.not, {
-
-    // only if a .p has been made
-    // if (patterns.includes(name.asSymbol), {
-
-    this.addFxSynths(numFxChannels);
-
-    // if user have not done a *p or did but used *s (*sall) and then went here
-    // create Ndef with Pdef source and play it, as if user did a *p
-    if (Ndef(name).isPlaying.not, {
-        Ndef(name).source = Pdef(name);
-        Ndef(name).reshaping = \elastic;
-        Ndef(name).play
-    });
-
-    "chainSize: %".format(chainSize).postln;
-
-    chainSize.do{ | i |
-        ///// not working value.calss,.  how to get fx key??? hmm..
-        //if ((Ndef((name.asString).asSymbol)[i+1].value.class == fxs[i]).not, {
-        //fxList[i].postln;
-
-
-        if (ConvenientCatalog.fxlist.includesKey(fxList[i].asSymbol), {
-            // important to iterate from 1
-            // first fx should not be Ndef(\name)[0]
-            Ndef(name)[i+1] = \filter -> ConvenientCatalog.getFx(fxList[i].asSymbol);
+    *s { | name, fadeTime = 1 ...args |
+        if (name.isNil.not and: patterns.includes(name.asSymbol), {
+            Ndef(name).source.clear; // aka Pdef(name).stop
+            // Ndef(name).stop(fadeTime);
+            Ndef(name).free(fadeTime);
+            // Ndef(name).clear(fadeTime);
+            patterns.remove(name.asSymbol);
         }, {
-            "Convenience:: fx: % does not exist".format(fxList[i]).postln
+            "Convenience:: .s not a running pattern".postln
+        });
+        if (name.isNil.not and: inputs.includes(name.asSymbol), {
+            Ndef(name).source.clear; // aka Pdef(name).stop
+            Ndef(name).free(fadeTime);
+            // Ndef(name).clear(fadeTime);
+            inputs.remove(name.asSymbol);
         })
-        //})
-    };
+    }
 
-    // default add dc filter
-    Ndef(name)[chainSize+1] = \filter -> ConvenientCatalog.getFx(\dc);
+    *sall { | fadeTime = 1 |
+        patterns.do{arg name;
+            Ndef(name.asSymbol).source.clear; // aka Pdef(name).stop
+            Ndef(name.asSymbol).free(fadeTime);
+        };
+        inputs.do{arg name;
+            Ndef(name.asSymbol).free(fadeTime);
+            // Ndef(name.asSymbol).clear;
+        };
+        patterns.clear;
+        inputs.clear;
+    }
 
-    // default add limiter
-    Ndef(name)[chainSize+2] = \filter -> ConvenientCatalog.getFx(\limiter);
+    *clear { | name ...args |
+        if (name.isNil.not and: patterns.includes(name.asSymbol) or: inputs.includes(name.asSymbol), {
+            Ndef(name).source.clear; // aka Pdef(name).stop
+            Ndef(name).free;
+            Ndef(name).clear;
+            if (patterns.includes(name.asSymbol), {
+                patterns.remove(name.asSymbol);
+            });
+            if (inputs.includes(name.asSymbol), {
+                inputs.remove(name.asSymbol);
+            });
+        }, {
+            "Convenience:: {}.s not a running Convenience pattern/module".format(name).postln
+        })
 
-    // last chain entry is control
-    Ndef(name)[chainSize+3] = \set -> Pbind(
-        \dur, Pdefn((name++"_dur").asSymbol),
-        *args
-    );
-    //});
-}, {
-    // if (chainSize > 0, {
-    // 	"Convenience:: pfx needs a name".postln;
-    // }, {
-    // 	"Convenience:: pfx needs an array of fx keys".postln;
+    }
 
-    // });
-    //"Convenience:: pfx needs a name and an array of fx keys".postln;
-})
-^Ndef(name);
+    *clearAll {
+        patterns.do{arg name;
+            Ndef(name.asSymbol).source.clear;
+            Ndef(name.asSymbol).free;
+            Ndef(name.asSymbol).clear;
+            patterns.remove(name.asSymbol);
+        };
+        inputs.do{arg name;
+            Ndef(name.asSymbol).source.clear;
+            Ndef(name.asSymbol).free;
+            Ndef(name.asSymbol).clear;
+            inputs.remove(name.asSymbol);
+        }
+    }
+
+    *tempo { | name, from, to, secs = 0 |
+
+    }
+
+    *fxs {
+        this.addFxSynths(numFxChannels);
+        ^ConvenientCatalog.fxmodules;
+    }
+
+    *fxargs { | fxname |
+        this.addFxSynths(numFxChannels);
+        ^ConvenientCatalog.getFx(fxname.asSymbol).argNames.reject(_ == 'in');
+    }
+
+    *pfx { | name, fxs /*, out = #[0,1],  server*/ ...args |
+    var fxList, chainSize;
+
+    //server = server ? Server.default;
+
+    fxList = Array.with(*fxs);
+    chainSize = fxList.size;
+
+
+    //"fxs: %".format(fxList).postln;
+    //args.do{arg i; i.asSymbol.postln};
+
+    if ((chainSize > 0) and: name.isNil.not and: fxs.isNil.not, {
+
+        // only if a .p has been made
+        // if (patterns.includes(name.asSymbol), {
+
+        this.addFxSynths(numFxChannels);
+
+        // if user have not done a *p or did but used *s (*sall) and then went here
+        // create Ndef with Pdef source and play it, as if user did a *p
+        if (Ndef(name).isPlaying.not, {
+            Ndef(name).source = Pdef(name);
+            Ndef(name).reshaping = \elastic;
+            Ndef(name).play
+        });
+
+        "chainSize: %".format(chainSize).postln;
+
+        chainSize.do{ | i |
+            ///// not working value.calss,.  how to get fx key??? hmm..
+            //if ((Ndef((name.asString).asSymbol)[i+1].value.class == fxs[i]).not, {
+            //fxList[i].postln;
+
+
+            if (ConvenientCatalog.fxlist.includesKey(fxList[i].asSymbol), {
+                // important to iterate from 1
+                // first fx should not be Ndef(\name)[0]
+                Ndef(name)[i+1] = \filter -> ConvenientCatalog.getFx(fxList[i].asSymbol);
+            }, {
+                "Convenience:: fx: % does not exist".format(fxList[i]).postln
+            })
+            //})
+        };
+
+        // default add dc filter
+        Ndef(name)[chainSize+1] = \filter -> ConvenientCatalog.getFx(\dc);
+
+        // default add limiter
+        Ndef(name)[chainSize+2] = \filter -> ConvenientCatalog.getFx(\limiter);
+
+        // last chain entry is control
+        Ndef(name)[chainSize+3] = \set -> Pbind(
+            \dur, Pdefn((name++"_dur").asSymbol),
+            *args
+        );
+        //});
+    }, {
+        // if (chainSize > 0, {
+        // 	"Convenience:: pfx needs a name".postln;
+        // }, {
+        // 	"Convenience:: pfx needs an array of fx keys".postln;
+
+        // });
+        //"Convenience:: pfx needs a name and an array of fx keys".postln;
+    })
+    ^Ndef(name);
 }
 
 *pp { | pattrname, parameter, value |
@@ -886,7 +887,7 @@ if ((chainSize > 0) and: name.isNil.not and: fxs.isNil.not, {
 
             //server.sync;
 
-            // use this to get numChannels of file "before" it read into buffer
+            // get numChannels of file "before" its read into buffer
             numChannels = SoundFile.use(file.fullPath, {arg qfile; qfile.numChannels});
             server.sync;
 
