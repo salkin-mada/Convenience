@@ -64,10 +64,6 @@ METHOD:: folderNum
 
 returns folder key at dict key index, if you need to think in integers
 
-METHOD:: pfx
-
-add fx to a pattern sequencer
-
 METHOD:: pp
 
 get or set parameter (pattern)
@@ -76,25 +72,32 @@ METHOD:: fade
 
 set fade time of pattern sequence and fxs
 
+METHOD:: pfx
+
+add fx to a pattern sequencer
+
 EXAMPLES::
 
 CODE::
 
 // load some soundfiles with a gui -> crawler loads folders
-Convenience.crawl
+C.crawl
 
 // no gui usage example
 // check your resource directory, it should have some default SC sounds
 Platform.resourceDir +/+ "sounds".openOS;
-// if this does'nt work due to some xdg poorness etc.
+// if this does not work due to some xdg sillyness etc.
 // check with this
 PathName(Platform.resourceDir+/+"sounds").entries.do{|f|"\tsoundfile - %".format(f.fileName).postln}
 // using that path we should be able to load the folder called 'sounds'
-Convenience.crawl(Platform.resourceDir +/+ "sounds", depth: 0);
+C.crawl(Platform.resourceDir +/+ "sounds", depth: 0);
 
 s.boot; 
 /* Convenience will only load files into ram if the server is running
 if you want to know what folders .crawl found before booting server use 'Convenience.folderPaths' to return a dictionary */
+
+C.crawl("path/to/some/file.wav")
+// loads single audio file and places bufnum at key 'CFiles'
 
 Convenience.list // post some info of what went down
 Convenience.list(gui: true) // or open a small gui window listing folders and buffer amounts
@@ -111,13 +114,15 @@ Convenience.s(\lay); // stop
 
 // post all arguments/parameters of Convenience.p
 Convenience.properties.do{|property| property.key.postln}
+C.properties.postcs
 
 // play with parameters
 (
 Convenience.p(\lay,
+    seed: 1234.rand,
     tempo: 8.0,
     folder: \sounds,
-    index: Prand([1,2,3], inf),
+    index: Prand((1..4), inf),
     pos: Pwhite(0.2,0.7),
     dur: Pseq([1,3,Rest(2),2], inf),
     rate: Pwhite(0.9,1.0) * Pstep([0.4,0.9,0.2], Prand([3,5,8], inf), inf),
@@ -134,20 +139,21 @@ Convenience.crawl
 // pitchshift a random folder
 (
 Convenience.p(\psrand,
+    seed: 1234.rand,
 	tempo: 145/60*4,
 	tuningOnOff: 1,
 	degree: Pseq([1,4,6,9], inf),
-	octave: Pseq([5,6,7], inf),
-	pitchShiftOnOff: 1,
-	pitchRatio: Pwhite(2.2,4.5),
-	formantRatio: Pwhite(0.8,5.2),
+	octave: Pseq([4,5,6], inf),
+	pst: 1,              // pitchift on/off
+	pr: Pwhite(2.2,4.5), // pitch ratio
+	fr: Pwhite(0.8,5.2), // formant ratio
 	folder: Convenience.randomFolder.postln,
-	index: Pwhite(1,100).floor,
+	index: Pwhite(1,100),
 	cutoff: Pwhite(500,12000),
 	res: 0.5,
-	ftype: Prand([0,1], inf),
+	ftype: Prand([0,1], inf), // lowpass/hipass
 	pos: 0,
-	dur: Pseq([1,1,1,1,1,1,Rest(3),1,1,1,Rest(5)], inf),
+	dur: Pstutter(rrand(1,6), Pwhite(0.5,2.0)),
 	rate: Pwhite(0.9,1.0) * Pstep([0.4,0.9,0.2], Prand([3,5,8], inf), inf)+3,
 	pan: Pwhite(-0.65,0.65),
 	amp: 0.4,
@@ -155,14 +161,17 @@ Convenience.p(\psrand,
 );
 )
 
+// repeat some events
+C.repeat('psrand', 4, 9)
+
 // change the filter resonans, degree and tempo param on the fly
 Convenience.pp(\psrand, 'res', 0.96);
 Convenience.pp(\psrand, 'res', Pseq([0.5,0.75,0.9,0.2], inf));
 Convenience.pp(\psrand, 'degree', 1);
 Convenience.pp(\psrand, 'tempo', 5);
 
-// add some more fxs to it (this part is heavily inpired by the Sleet Quark and SuperDirt
-// will probably soon be removed
+// add some fxs (insert kinda)
+// will probably soon be removed/changed
 (
 Convenience.pfx(\psrand, [\delay, \flanger],
 	\wet1, 0.2,

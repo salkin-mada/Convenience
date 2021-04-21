@@ -55,6 +55,10 @@ Both creates a dict of `Buffer`'s loaded with the audio files from the folders f
 
 Each folder's contents are accessible as an array of buffers at a dict key based on the folder name formatted into a usable key (name/id).
 
+* `Convenience.crawl(file)`
+
+Will load a single sound file and place bufnum in the key `CFiles`
+
 * `Convenience.p(\name)`
 
 Create and start a convenient sequencer, giving it a name is the minimum requirement
@@ -104,6 +108,6 @@ C.repeat('lay',0,5)
 C.s('lay')
 ```
 
-Convenience.p outputs stereo, 2 channels, but can be sequenced to whatever output pair and bus.
-For more info about `.p` arguments check the `convenience_guide.scd` in /Convenience/usage or simply check the helpfile, `ctrl+d` / `cmd+d` / `K` / `<A>-h` depending on your OS and IDE.
-
+Convenience.p can output 1-4 channels and can be sequenced to whatever bus.
+For more info about `.p` arguments simply check the helpfile, `ctrl+d` / `cmd+d` / `K` / `<A>-h` depending on your OS and IDE.
+Or the `convenience_guide.scd` in `**path_to**/Convenience/usage`
