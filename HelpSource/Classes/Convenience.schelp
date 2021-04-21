@@ -1,6 +1,6 @@
 CLASS:: Convenience
 
-SUMMARY:: Load audio files into collections of buffers and sequence them
+SUMMARY:: Load audio files into collections of buffers and sequence/granulate them
 
 CATEGORIES:: Monsters of Arguments, Convenience, Semi Undocumented Classes
 
@@ -17,8 +17,7 @@ CLASSMETHODS::
 
 METHOD:: crawl
 
-crawler loads folders of files for you.
-(all buffers created is mono)
+crawler loads folders of files for you. mono and stereo.
 
 METHOD:: p
 
@@ -31,6 +30,10 @@ stop pattern sequencer
 METHOD:: sall
 
 stop all pattern sequencers
+
+METHOD:: repeat
+
+repeat part of the pattern "history", can be used a bit like a random sampler
 
 METHOD:: get
 
@@ -72,8 +75,6 @@ get or set parameter (pattern)
 METHOD:: fade
 
 set fade time of pattern sequence and fxs
-
-
 
 EXAMPLES::
 
@@ -160,7 +161,8 @@ Convenience.pp(\psrand, 'res', Pseq([0.5,0.75,0.9,0.2], inf));
 Convenience.pp(\psrand, 'degree', 1);
 Convenience.pp(\psrand, 'tempo', 5);
 
-//add some more fxs to it (this part is heavily inpired by the Sleet Quark and SuperDirt
+// add some more fxs to it (this part is heavily inpired by the Sleet Quark and SuperDirt
+// will probably soon be removed
 (
 Convenience.pfx(\psrand, [\delay, \flanger],
 	\wet1, 0.2,
@@ -179,6 +181,7 @@ Convenience.clear(\psrand); // house keeping -> free and clear all fxs associate
 
 // list all fxs in the Convenience system
 Convenience.fxs
+
 // list all param arguments of a specific fx
 Convenience.fxargs(\flanger)
 
