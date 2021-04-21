@@ -21,7 +21,7 @@ crawler loads folders of files for you. mono and stereo.
 
 METHOD:: p
 
-create a pattern sequencer and play it, this always holds a LeakDC and Limiter in the end of it's chain
+create a pattern sequencer and play it
 
 METHOD:: s
 
@@ -161,8 +161,8 @@ Convenience.p(\psrand,
 );
 )
 
-// repeat some events
-C.repeat('psrand', 4, 9)
+// repeat some history (in the good way) => (mem is 100 events)
+C.repeat('psrand', min: 4, max: 12, repeats: 1)
 
 // change the filter resonans, degree and tempo param on the fly
 Convenience.pp(\psrand, 'res', 0.96);
