@@ -1076,13 +1076,13 @@ Convenience {
     if (buffers.notEmpty, {
         var bufferGroup;
 
-        "get siger folder klasse er: %".format(folder.class).postln;
-        "og indeholder: %".format(folder).postln;
+        // "get siger folder klasse er: %".format(folder.class).postln;
+        // "og indeholder: %".format(folder).postln;
 
         case
         // {folder.isSymbol}{ // wioaw.. not working. jeebz
         {folder.isKindOf(Symbol)}{
-            "folder symbol length %".format(folder.asString.size).postln;
+            // "folder symbol length %".format(folder.asString.size).postln;
             if (folder.asString.isEmpty)
             {folder = nil; "symbol was empty".postln}
             {
@@ -1210,14 +1210,14 @@ Convenience {
     Event.addEventType(\Convenience, {
         var bufferNumChannels, outputNumChannels, scaling, pitchshift;
 
-        ~folder.postln;
+        // ~folder.postln;
         // if buffer is not directly used
         // use folder and index references
         if (~buffer.isNil) {
             var folder = ~folder;
             var index = ~index;
             ~buffer = Convenience.get(folder, index);
-            "C event folder is -> %".format(folder).postln;
+            // "C event folder is -> %".format(folder).postln;
         };
 
         bufferNumChannels = ~buffer.numChannels;
