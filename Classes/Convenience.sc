@@ -4,7 +4,7 @@ Convenience {
     classvar >verbosePosts = false; // debug or interest
     classvar >suggestions = false; // you want some?
     classvar <>numFxChannels = 2; // default number of fx channels
-    classvar <>pattern_history_size = 100;
+    classvar <>pattern_history_size = 100; // for *repeat
 
     // private config
     classvar <dir, <buffers, <folderPaths, <filePaths, <patterns, <patterns_history, <inputs;
@@ -29,7 +29,7 @@ Convenience {
         this.prAddEventType;
         "\n*** Convenience is possible ***".postln;
         if(Platform.ideName=="scnvim", {
-            "fantastic choice of ide".postln;
+            "fantastic choice of IDE".postln;
         });
         if (suggestions, {
             server.doWhenBooted({
@@ -103,11 +103,11 @@ Convenience {
         ]
     }
 
-    *p { | name, bus = 0, numChannels= 2, type=\Convenience, seed=666, quant= 0, folder, index= 0, dur= 4,
+    *p { arg name, bus = 0, numChannels= 2, type=\Convenience, seed=666, quant= 0, folder, index= 0, dur= 4,
         timingOffset = 0, stretch= 1.0, pos= 0, loop= 0, rate= 1, degree= 0, octave= 3, root= 0, scale,
         cutoff= 22e3, res= 0.01, fgain= 1.0, ftype= 0, bass = 0, pan= 0, width= 2.0, spread= 0.5, amp= 0.5,
         attack= 0.01, sustain=1.0, release= 0.5, tempo, tuningOnOff= 0, basefreq= 440, pst= 0, pr= 1.0, fr= 1.0,
-        replay= 1, server ...args |
+        replay= 1, server ...args;
 
         var properties, pdefnProperties = List.new;
         properties = Dictionary.with(*this.properties.collect{arg item; item});
@@ -123,6 +123,8 @@ Convenience {
                     folder = Convenience.folders.asArray[0];
                 }, {Error("Convenience:: no buffers available").throw; ^nil})
             });
+            // dont allow (change) strings in folder argument
+            if (folder.isString) {folder = folder.asSymbol};
 
             // note note note note
             // if queried folder does not exist
@@ -203,6 +205,10 @@ Convenience {
                     pdefnProperties.add(key)
                 })
             };
+            // also add the ...args
+            // args.do{ | arg |
+            //     pdefnProperties.add(arg)
+            // };
 
             // decide what clock to use
             // check if Utopia is in Class library
@@ -220,6 +226,14 @@ Convenience {
 
             pdefnProperties = pdefnProperties.collect{ | key |
                 var pdefn;
+                // allow empty symbols in folder property
+                if (key == 'folder') {
+                    // if (folder.asString.isEmpty) {
+                    if (key.asString.isEmpty) {
+                        key = nil;
+                        "C:: folder symbol is empty..".postln;
+                    }
+                };
                 //switch(key)
                 //{\type} {[key.asSymbol, type]}
                 //{\scale} {[key.asSymbol, scale]}
@@ -238,12 +252,12 @@ Convenience {
                 Pseed(seed,
                     Pbind().patternpairs_(pdefnProperties.collect{ | pair |
                         pair;
-                    }.flat).collect{|e|
+                    }.flat).collect{|env|
                         if(patterns_history[name].size >= pattern_history_size, {
                             patterns_history[name].removeAt(0);
                         });
-                        patterns_history[name].add(e);
-                        e;
+                        patterns_history[name].add(env);
+                        env;
                     }
                 )
             );
@@ -764,7 +778,8 @@ Convenience {
 
     server = server ? Server.default;
 
-    if(type.isNil.not, {
+    if(type.notNil, {
+        var condition = Condition.new;
         if(type == "folder", {
             folder = PathName(path);
             folderKey = this.prKeyify(folder.folderName);
@@ -805,7 +820,6 @@ Convenience {
                         var numChannels;
                         working = true;
 
-                        //server.sync;
                         // use this to get numChannels of file "before" it read into buffer
                         numChannels = SoundFile.use(file.fullPath, {arg qfile; qfile.numChannels});
                         server.sync;
@@ -818,32 +832,40 @@ Convenience {
                         {numChannels == 1}
                         {
                             if(verbosePosts.asBoolean,{"convenience:: loading 1 channels".postln});
-                            Buffer.readChannel(server, file.fullPath;, channels: [0]).normalize(0.99);
+                            Buffer.readChannel(server, file.fullPath, 
+                                channels: [0],
+                                // action: {condition.unhang}
+                            ).normalize(0.99);
                         }
                         {numChannels == 2}
                         {
                             if(verbosePosts.asBoolean,{"convenience:: loading 2 channels".postln});
                             Buffer.readChannel(server, file.fullPath,
-                                channels: [numChannels.collect{arg i; i}].flat
+                                channels: [numChannels.collect{arg i; i}].flat,
                                 //channels: [numChannels.collect{arg i; i}].flat.select{} // only select the chans we want
+                                // action: {condition.unhang}
                             ).normalize(0.99);
                         }
                         {numChannels > 2}
                         {
                             if(verbosePosts.asBoolean,{"convenience:: loading 1 channels".postln});
-                            Buffer.readChannel(server, file.fullPath;, channels: [0]).normalize(0.99);
+                            Buffer.readChannel(server, file.fullPath;,
+                                channels: [0],
+                                // action: {condition.unhang}
+                            ).normalize(0.99);
                         }
                         {numChannels == 0}
                         {
                             if(verbosePosts.asBoolean,{"convenience:: does not understand file channel count".warn});
-                            nil
+                            // nil
                         };
+                        // condition.hang;
                     };
 
-                    if (working == true, {
-                        working = false;
-                        "Convenience::crawl -> done loading %".format(folderKey).postln;
-                    });
+                    // if (working == true, {
+                    //     working = false;
+                    //     "Convenience::crawl -> done loading %".format(folderKey).postln;
+                    // });
                 }, {
                     "Convenience::crawl -> no sound files in %".format(folderKey).postln;
                     //files = nil;
@@ -875,8 +897,11 @@ Convenience {
                 });
             });
             //}.fork{AppClock};
+            if (working == true, {
+                working = false;
+                "Convenience::crawl -> done loading %".format(folderKey).postln;
+            });
         });
-
 
         if(type == "file") {
             var numChannels, buffer;
@@ -884,8 +909,6 @@ Convenience {
             working = true;
 
             if(verbosePosts) {"Convenience:: *load -> it's a file".postln};
-
-            //server.sync;
 
             // get numChannels of file "before" its read into buffer
             numChannels = SoundFile.use(file.fullPath, {arg qfile; qfile.numChannels});
@@ -899,20 +922,27 @@ Convenience {
             {numChannels == 1}
             {
                 if(verbosePosts.asBoolean,{"convenience:: loading 1 channels".postln});
-                buffer = Buffer.readChannel(server, file.fullPath, channels: [0]).normalize(0.99);
+                buffer = Buffer.readChannel(server, file.fullPath,
+                    channels: [0],
+                    // action: {condition.unhang}
+                ).normalize(0.99);
             }
             {numChannels == 2}
             {
                 if(verbosePosts.asBoolean,{"convenience:: loading 2 channels".postln});
                 buffer = Buffer.readChannel(server, file.fullPath,
-                    channels: [numChannels.collect{arg i; i}].flat
-                    //channels: [numChannels.collect{arg i; i}].flat.select{} // only select the chans we want
+                    channels: [numChannels.collect{arg i; i}].flat,
+                    // //channels: [numChannels.collect{arg i; i}].flat.select{} // only select the chans we want
+                    // action: {condition.unhang}
                 ).normalize(0.99);
             }
             {numChannels > 2}
             {
                 if(verbosePosts.asBoolean,{"convenience:: loading 1 channels".postln});
-                buffer = Buffer.readChannel(server, file.fullPath, channels: [0]).normalize(0.99);
+                buffer = Buffer.readChannel(server, file.fullPath,
+                    channels: [0],
+                    // action: {condition.unhang}
+                ).normalize(0.99);
             }
             {numChannels == 0}
             {
@@ -920,7 +950,10 @@ Convenience {
                 nil
             };
 
-            server.sync;
+            // change this to condition!!
+            // server.sync;
+
+            // condition.hang;
 
 
             if (working == true, {
@@ -1040,35 +1073,61 @@ Convenience {
 }
 
 *get { | folder, index |
-
     if (buffers.notEmpty, {
-
         var bufferGroup;
 
-        // if folder is unspecified
-        if (folder.isNil, {
-            //"*get folder is nil".postln;
+        // "get siger folder klasse er: %".format(folder.class).postln;
+        // "og indeholder: %".format(folder).postln;
+
+        case
+        // {folder.isSymbol}{ // wioaw.. not working. jeebz
+        {folder.isKindOf(Symbol)}{
+            // "folder symbol length %".format(folder.asString.size).postln;
+            if (folder.asString.isEmpty)
+            {folder = nil; "symbol was empty".postln}
+            {
+                // if queried folder does not exist
+                if (Convenience.buffers.includesKey(folder).not, {
+                    "*get:: cant find queried folder: %".format(folder).postln;
+                    if(Convenience.folders.asArray[0].isNil.not, {
+                        folder = Convenience.folders.asArray[0];
+                        "*get::replacing with: %".format(folder).postln;
+                    }, {
+                        Error("Convenience::*get:: user is asking for folder which is not there, and *get cant find another folder to replace it with").throw;
+                        ^nil
+                    })
+                });
+            };
+        }
+        // {folder.isString}{
+        //     if(Convenience.folders.asArray[0].isNil.not) {
+        //         folder = Convenience.folders.asArray[0]};
+        //     "C :: folder specified as string -> not recognized".postln;
+        // }
+        // {folder.isKindOf(Char)}{
+        //     if(Convenience.folders.asArray[0].isNil.not) {
+        //         folder = Convenience.folders.asArray[0]};
+        //     "C :: folder specified as char -> not recognized".postln;
+        // }
+        {folder.isInteger}{
+            folder = this.folderNum(folder)
+        }
+        {folder.isFloat}{
+            folder = this.folderNum(folder.round.asInteger)
+        }
+        {folder.isNil}{
             if(Convenience.folders.asArray[0].isNil.not, {
                 folder = Convenience.folders.asArray[0];
             }, {
                 Error("Conveience::*get:: folder is unspecified, which is okay but *get cant find a folder to use").throw;
                 ^nil
             })
-        });
-        // if queried folder does not exist
-        if (Convenience.buffers.includesKey(folder).not, {
-            "*get:: cant find queried folder: %".format(folder).postln;
-            if(Convenience.folders.asArray[0].isNil.not, {
-                folder = Convenience.folders.asArray[0];
-                "*get::replacing with: %".format(folder).postln;
-            }, {
-                Error("Convenience::*get:: user is asking for folder which is not there, and *get cant find another folder to replace it with").throw;
-                ^nil
-            })
-        });
+        }
+        {"C:: folder can not be specified in that type..".warn};
 
         bufferGroup = buffers[folder.asSymbol];
 
+        if (index.isFloat) {index.round.asInteger}; // Float to Integer
         // if index is unspecified
         if (index.isNil, {index = 0});
         // always get a buffer for user
@@ -1125,6 +1184,7 @@ Convenience {
 
 *prKeyify { | input |
     var result;
+    if (input == "r" or: {input == "rest"}) { input = input[0].toUpper++input[1..] };
     result = input
     .replace(($ ),"_")
     .replace(($-),"_")
@@ -1150,12 +1210,14 @@ Convenience {
     Event.addEventType(\Convenience, {
         var bufferNumChannels, outputNumChannels, scaling, pitchshift;
 
+        // ~folder.postln;
         // if buffer is not directly used
         // use folder and index references
         if (~buffer.isNil) {
             var folder = ~folder;
             var index = ~index;
-            ~buffer = Convenience.get(folder, index)
+            ~buffer = Convenience.get(folder, index);
+            // "C event folder is -> %".format(folder).postln;
         };
 
         bufferNumChannels = ~buffer.numChannels;
