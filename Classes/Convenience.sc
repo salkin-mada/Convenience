@@ -637,16 +637,6 @@ Convenience {
 
     });
 
-    // if no path is specified open crawl drag'n drop window
-    if (initpath.isNil, {
-        ConvenientCrawlerView.open(depth, server);
-    }, {
-        // NO WINDOW USAGE
-        // initpath was set when crawl method was called
-        // going directly to parsing!
-        this.prParseFolders(initpath, depth, server)
-    });
-
     // crawler load synths user config
     if (loadSynths == true, {
         this.addSynths(server);
