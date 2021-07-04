@@ -1,7 +1,7 @@
 (
     name: "Convenience",
     summary: "audio file loader and sequencer, capable of particle synthesis etc.",
-    version: "0.1.1",
+    version: "0.1.2",
     schelp: "Convenience",
     license: "GPL",
     url: "https://github.com/salkin-mada/Convenience",
