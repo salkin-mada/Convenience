@@ -32,8 +32,6 @@
 		Out.ar(bus, (sig*env));
 	}).add;
 	
-	////server.sync;
-	
 	SynthDef(("ConvenienceStereo_"++channels).asSymbol, {
 		|
 		bufnum, bus = 0, loop = 0, rate = 1, pan = 0, spread = 0.5, width = 2, amp = 0.5,
@@ -59,10 +57,8 @@
 		Out.ar(bus, (sig*env));
 	}).add;
 	
-	////server.sync;
-	
 	/*	  --------------------------------------  */
-	/*	  for scaling, assuming samples are tuned */
+	/*	           for scaling                   */
 	/*	  ------------------------------------- */
 	SynthDef(("ConvenienceMonoScale_"++channels).asSymbol, {
 		|
@@ -90,8 +86,6 @@
 		Out.ar(bus, (sig*env));
 	}).add;
 	
-	////server.sync;
-	
 	SynthDef(("ConvenienceStereoScale_"++channels).asSymbol, {
 		|
 		bufnum, bus = 0, loop = 0, pan = 0, spread = 0.5, width = 2, amp = 0.5,
@@ -118,8 +112,6 @@
 		Out.ar(bus, (sig*env));
 	}).add;
 	
-	////server.sync;
-	
 	/*	  --------------------------------------  */
 	/*	  bfft filter bins				synth	 */
 	/*	  ------------------------------------- */
@@ -141,8 +133,6 @@
 	Out.ar(out, sig);
 	}).add;
 	
-	////server.sync;
-	
 	SynthDef(("ConvenienceBufBinsScale_"++channels).asSymbol, { | bufnum, out = 0, win = 1, loop = 0, pan = 0, spread = 0.5, width = 2, amp = 0.5,
 	binRange =#[0, 512], gate = 1, attack = 0.01, decay = 0.01, sustain = 2,
 	release = 0.01, pos = 0, basefreq=440, freq |
@@ -160,8 +150,6 @@
 	sig = LeakDC.ar(sig);
 	Out.ar(out, sig);
 	}).add; */
-	
-	//server.sync;
 	
 	/*	  --------------------------------------  */
 	/*	  bfft filter bins input		synth	 */
