@@ -25,11 +25,11 @@ Convenience {
         patterns = IdentitySet.new;
         patterns_history = Dictionary.new;
         inputs = IdentitySet.new;
-        loadFn = #{ | server | Convenience.prPipeFoldersToLoadFunc(server) };
+        loadFn = #{ | server | Convenience.prPipeFoldersToLoadFunc(server: server) };
         this.prAddEventType;
         "\n*** Convenience is possible ***".postln;
         if(Platform.ideName=="scnvim", {
-            "fantastic choice of IDE".postln;
+            "SCNvim FTW:".postln;
         });
         if (suggestions, {
             server.doWhenBooted({
@@ -111,6 +111,8 @@ Convenience {
 
         var properties, pdefnProperties = List.new;
         properties = Dictionary.with(*this.properties.collect{arg item; item});
+
+        "extra args: %".format(args).postln; // hallo hallo halooo
 
         if (ConvenientCatalog.synthsBuild, {
             if(name.isNil,{"needs a key aka name, please".throw; ^nil});
@@ -383,6 +385,108 @@ Convenience {
         inputs.clear;
     }
 
+    *record { | name, bus, duration = \inf, format = "wav", server |
+      // also impl to record Bus'ses iggå, ig bar SoundIn.ar(bus) men ~min_flotte_bus
+      if(name.isNil.not and: (bus.isNil.not), {
+        fork{
+          var fileName = name.asString ++ "_" ++ Date.gmtime.stamp.asString.replace(($ ),"_").replace($:,"");
+          var recPath = Platform.recordingsDir ++ "/Convenient_Recordings/" ++ fileName ++ "." ++ format;
+          var ndefName = (name.asString ++ "_convenient_recorder").asSymbol;
+          var num_chans;
+          server = server ? Server.default;
+          switch ( bus.class.asSymbol,
+            \Integer,  {
+              num_chans = 1;
+              Ndef(ndefName, {
+                SoundIn.ar(bus);
+              });
+            },
+             \Array, {
+              num_chans = bus.size;
+              Ndef(ndefName, {
+                SoundIn.ar(bus);
+              });
+            },
+             \Bus, {
+              num_chans = bus.numChannels;
+              Ndef(ndefName, {
+                In.ar(bus, num_chans);
+              });
+            },
+            {
+              num_chans = 1;
+              Ndef(ndefName, {
+                SoundIn.ar(bus);
+              });
+            }
+          );
+          // 10.do{server.sync}; // lol, actually works
+          1.wait; // hacky, should use condition
+          server.record(recPath, Ndef(ndefName).bus, num_chans, Ndef(ndefName).nodeID, duration);
+        }
+      }, {
+        "C: check name and bus please".throw;
+      })
+    }
+
+    // *pauseRecording { | server |
+    //       server = server ? Server.default;
+    //       server.pauseRecording;
+    // }
+    *stopRecording { | server |
+          server = server ? Server.default;
+          server.stopRecording;
+    }
+
+    *pb { | name, buffer, pos=0.0, rate=1.0, trigger, loop=0, bus=#[0,1], amp=0.5 |
+    if (name.isNil.not and: buffer.isNil.not) {
+      if (rate.isUGen) {
+        Ndef(name).map(\rate, rate);
+      } {
+        Ndef(name).set(\rate, rate);
+      };
+      if (pos.isUGen) {
+        Ndef(name).map(\position, pos);
+      } {
+        Ndef(name).set(\position, pos);
+      };
+      if (trigger.isUGen) {
+        Ndef(name).map(\trigger, trigger);
+      } {
+        Ndef(name).set(\trigger, trigger);
+      };
+      if (amp.isUGen) {
+        Ndef(name).map(\amp, amp);
+      } {
+        Ndef(name).set(\amp, amp);
+      };
+      Ndef(name).set(\loop, loop);
+      Ndef(name, {
+        var frames= BufFrames.kr(buffer);
+        var sig= ConvenientBufferPlayer.ar(
+          numChannels:buffer.numChannels,
+          bufnum:buffer,
+          rate:\rate.ar(1.0)*BufRateScale.kr(buffer),
+          startPos:\position.ar(0.0)*frames,
+          trigger:\trigger.ar(1),
+          loop:\loop.kr(0)
+        );
+        Limiter.ar(LeakDC.ar(sig * \amp.ar(1.0)));
+      });
+      Ndef(name).playN(bus);
+      ^Ndef(name);
+    } {
+      "C:: needs a name / buffer".postln;
+    }
+  }
+    *sb { | name, fadeTime = 0.1 |
+    if (name.isNil.not) {
+      ^Ndef(name).stop(fadeTime);
+    } {
+      "C:: needs a name".postln;
+    }
+  }
+
     *clear { | name ...args |
         if (name.isNil.not and: patterns.includes(name.asSymbol) or: inputs.includes(name.asSymbol), {
             Ndef(name).source.clear; // aka Pdef(name).stop
@@ -415,9 +519,9 @@ Convenience {
         }
     }
 
-    *tempo { | name, from, to, secs = 0 |
+    // *tempo { | name, from, to, secs = 0 |
 
-    }
+    // }
 
     *fxs {
         this.addFxSynths(numFxChannels);
@@ -614,7 +718,7 @@ Convenience {
     });
 }
 
-*crawl { | initpath, depth = 0, server |
+*crawl { | initpath, depth = 0, force = false, server |
     // if server is nil set to default
     server = server ? Server.default;
 
@@ -628,7 +732,7 @@ Convenience {
         //
         if(PathName(initpath).isFolder, {
             if(verbosePosts){"crawl:: this is a folder".postln};
-            this.prParseFolders(initpath, depth, server);
+            this.prParseFolders(initpath, depth, force, server);
         }); 
         if(PathName(initpath).isFile, {
             if(verbosePosts){"crawl:: this is a file".postln};
@@ -644,7 +748,7 @@ Convenience {
     });
 }
 
-*prParseFolders{ | initpath, depth = 0, server |
+*prParseFolders{ | initpath, depth = 0, force = false, server |
     //var initPathDepthCount = PathName(initpath).fullPath.withTrailingSlash.split(thisProcess.platform.pathSeparator).size;
     var initPathDepth, anythingFound;
 
@@ -708,21 +812,23 @@ Convenience {
 
     if (anythingFound.asBoolean.not, {"\n\tno folders is staged to load\n".postln});
 
-    // stage work for boot up
-    ServerBoot.add(loadFn, server);
-    // if server is running create rightaway
+        // if server is running create rightaway
     if (server.serverRunning) {
         {
-            this.prPipeFoldersToLoadFunc(server)
+            this.prPipeFoldersToLoadFunc(force, server)
         }.fork(AppClock)
+    } {
+      // stage work for boot up
+      ServerBoot.add(loadFn, server);
     };
 }
 
-*prPipeFoldersToLoadFunc{ | server |
+*prPipeFoldersToLoadFunc{ | force, server |
     var news = false;
+    force = force ? false;
 
     folderPaths.keysValuesDo{ | key |
-        if (buffers.includesKey(key).not, {news = true});
+        if (buffers.includesKey(key).not and: (force.asBoolean.not), {news = true});
     };
 
     /*folderPaths.keysDo{|item|
@@ -745,7 +851,18 @@ Convenience {
             if (verbosePosts, {"Convenience:: pipeFolderToloadFunc:: loading done".postln})
 
         }, {
-            "Convenience::crawl -> no folders that have not already been loaded".postln;
+            "C::crawl -> no folders that have not already been loaded".postln;
+            if (force) {
+              "C::crawl -> but forcing - loading anyway".postln;
+              folderPaths.keysValuesDo{ | key, path |
+                // if (buffers.includesKey(key).not,{
+                  this.load(path.asString, "force", server);
+                // }, {
+                  // if (verbosePosts, {"Convenience::crawl -> nothing new to %".format(key).postln})
+                // })
+              };
+              if (verbosePosts, {"Convenience:: pipeFolderToloadFunc:: loading done".postln})
+            }
         });
 
 
@@ -770,7 +887,7 @@ Convenience {
 
     if(type.notNil, {
         var condition = Condition.new;
-        if(type == "folder", {
+        if(type == "folder") {
             folder = PathName(path);
             folderKey = this.prKeyify(folder.folderName);
 
@@ -891,7 +1008,7 @@ Convenience {
                 working = false;
                 "Convenience::crawl -> done loading %".format(folderKey).postln;
             });
-        });
+        };
 
         if(type == "file") {
             var numChannels, buffer;
@@ -958,6 +1075,228 @@ Convenience {
             "Conveniece:: single file load:: buffer: % ".format(buffer).postln;
             ConvenientListView.update;
 
+        };
+
+        if(type == "force") {
+            folder = PathName(path);
+            folderKey = this.prKeyify(folder.folderName);
+            if (buffers.includesKey(folderKey).not) {
+                files = folder.entries.select { | file |
+                    var hiddenFile;
+                    var result;
+
+                    // check if file is dot type
+                    file.fileName.do{ | char, i |
+                        if(char.isPunct and: i == 0, {
+                            if(verbosePosts == true, {
+                                "found a dot file - avoiding -> %".format(file).postln
+                            });
+                            hiddenFile = true;
+                        })
+                    };
+                    // then
+                    if(hiddenFile.asBoolean.not, {
+                        result = supportedExtensions.includes(file.extension.toLower.asSymbol);
+                    }, {result = false});
+
+                    result;
+                }; // this func is possibly really prParseFolders' responsibility
+
+                //"files: %".format(files).postln;
+                if (files.size > 0, {
+                    loadedBuffers = files.collect { | file |
+                        var numChannels;
+                        working = true;
+
+                        // use this to get numChannels of file "before" it read into buffer
+                        numChannels = SoundFile.use(file.fullPath, {arg qfile; qfile.numChannels});
+                        server.sync;
+
+                        if(verbosePosts.asBoolean,{
+                            "file: %\n\tcontains % chans".format(file.fileName, numChannels).postln;
+                        });
+
+                        case
+                        {numChannels == 1}
+                        {
+                            if(verbosePosts.asBoolean,{"convenience:: loading 1 channels".postln});
+                            Buffer.readChannel(server, file.fullPath, 
+                                channels: [0],
+                                // action: {condition.unhang}
+                            ).normalize(0.99);
+                        }
+                        {numChannels == 2}
+                        {
+                            if(verbosePosts.asBoolean,{"convenience:: loading 2 channels".postln});
+                            Buffer.readChannel(server, file.fullPath,
+                                channels: [numChannels.collect{arg i; i}].flat,
+                                //channels: [numChannels.collect{arg i; i}].flat.select{} // only select the chans we want
+                                // action: {condition.unhang}
+                            ).normalize(0.99);
+                        }
+                        {numChannels > 2}
+                        {
+                            if(verbosePosts.asBoolean,{"convenience:: loading 1 channels".postln});
+                            Buffer.readChannel(server, file.fullPath;,
+                                channels: [0],
+                                // action: {condition.unhang}
+                            ).normalize(0.99);
+                        }
+                        {numChannels == 0}
+                        {
+                            if(verbosePosts.asBoolean,{"convenience:: does not understand file channel count".warn});
+                            // nil
+                        };
+                        // condition.hang;
+                    };
+
+                    // if (working == true, {
+                    //     working = false;
+                    //     "Convenience::crawl -> done loading %".format(folderKey).postln;
+                    // });
+                }, {
+                    "Convenience::crawl -> no sound files in %".format(folderKey).postln;
+                    //files = nil;
+                });
+
+
+                //"\n\t loadedBuffers from folder: % --> %".format(folder.folderName,loadedBuffers).postln;
+                //server.sync; // danger danger only working when used before boot use update here instead?
+                //"loading into memory, hang on".postln;
+
+                // add loadedBuffers to dictionary with key from common folder
+                if (loadedBuffers.isEmpty.not, {
+                    if (buffers.includesKey(folderKey).not, {
+                        if(verbosePosts.asBoolean,{
+                          "C::crwal:foce -> new folder key: %".format(folderKey).postln;
+                        });
+                        //  add and remove spaces in folder name
+                        buffers.add(folderKey -> loadedBuffers);
+                        ConvenientListView.update
+                    })
+                }, {
+                    //"no soundfiles in : %, skipped".format(folder.folderName).postln;
+                    // update folderPaths
+                    // folderPaths.removeAt(folderKey);
+                });
+            } {
+                if(verbosePosts.asBoolean,{
+                  "folder % already loaded -> but forcing".format(folderKey).postln
+                });
+                files = folder.entries.select { | file |
+                    var hiddenFile;
+                    var result = false;
+
+                    // check if file is dot type
+                    file.fileName.do{ | char, i |
+                        if(char.isPunct and: i == 0, {
+                            if(verbosePosts == true, {
+                                "found a dot file - avoiding -> %".format(file).postln
+                            });
+                            hiddenFile = true;
+                        })
+                    };
+                    // then
+                    if(hiddenFile.asBoolean.not, {
+                        result = supportedExtensions.includes(file.extension.toLower.asSymbol);
+                    }, {result = false});
+                    // check that file is not already included from last folder load aka this is force mode, but "intelligent" :)~
+                    Buffer.cachedBuffersDo(server, {|buffer| if (buffer.path == file.fullPath) {result = false}});
+                    // buffers[folderKey].do{ | buffer, n |
+                    // // this.get(folderKey, n).path.postln;
+                    // // file.fullPath.postln;
+                    //   if (this.get(folderKey, n).path == file.fullPath) {
+                    //     result = false;
+                    //     "C::crawl:force -> new files in key: %".format(folderKey).postln;
+                    //   } {"SAME".postln;};
+                    // };
+                    result;
+                }; // this func is possibly really prParseFolders' responsibility
+
+                //"files: %".format(files).postln;
+                if (files.size > 0, {
+                    loadedBuffers = files.collect { | file |
+                        var numChannels;
+                        working = true;
+
+                        // use this to get numChannels of file "before" it read into buffer
+                        numChannels = SoundFile.use(file.fullPath, {arg qfile; qfile.numChannels});
+                        server.sync;
+
+                        if(verbosePosts.asBoolean,{
+                            "file: %\n\tcontains % chans".format(file.fileName, numChannels).postln;
+                        });
+
+                        case
+                        {numChannels == 1}
+                        {
+                            if(verbosePosts.asBoolean,{"convenience:: loading 1 channels".postln});
+                            Buffer.readChannel(server, file.fullPath, 
+                                channels: [0],
+                                // action: {condition.unhang}
+                            ).normalize(0.99);
+                        }
+                        {numChannels == 2}
+                        {
+                            if(verbosePosts.asBoolean,{"convenience:: loading 2 channels".postln});
+                            Buffer.readChannel(server, file.fullPath,
+                                channels: [numChannels.collect{arg i; i}].flat,
+                                //channels: [numChannels.collect{arg i; i}].flat.select{} // only select the chans we want
+                                // action: {condition.unhang}
+                            ).normalize(0.99);
+                        }
+                        {numChannels > 2}
+                        {
+                            if(verbosePosts.asBoolean,{"convenience:: loading 1 channels".postln});
+                            Buffer.readChannel(server, file.fullPath;,
+                                channels: [0],
+                                // action: {condition.unhang}
+                            ).normalize(0.99);
+                        }
+                        {numChannels == 0}
+                        {
+                            if(verbosePosts.asBoolean,{"convenience:: does not understand file channel count".warn});
+                            // nil
+                        };
+                        // condition.hang;
+                    };
+
+                    // if (working == true, {
+                    //     working = false;
+                    //     "Convenience::crawl -> done loading %".format(folderKey).postln;
+                    // });
+                }, {
+                    "Convenience::crawl -> no sound files in %".format(folderKey).postln;
+                    //files = nil;
+                });
+
+
+                //"\n\t loadedBuffers from folder: % --> %".format(folder.folderName,loadedBuffers).postln;
+                //server.sync; // danger danger only working when used before boot use update here instead?
+                //"loading into memory, hang on".postln;
+
+                // add loadedBuffers to dictionary with key from common folder
+                if (loadedBuffers.isEmpty.not) {
+                        if(verbosePosts.asBoolean,{
+                          "C::crawl:force -> adding new files to folder key: %".format(folderKey).postln;
+                        });
+                        buffers.keysValuesDo{ | key, value |
+                          var newValue;
+                          if (key == folderKey) {
+                            loadedBuffers.do{ | buffer |
+                              value=value.asList.add(buffer)
+                            };
+                            buffers.add(key -> value);
+                          }
+                        };
+                        ConvenientListView.update
+                }
+            };
+            //}.fork{AppClock};
+            if (working == true, {
+                working = false;
+                "Convenience::crawl -> done loading %".format(folderKey).postln;
+            });
         };
         // });
     }, {"Convenience:: no type to loadfunc".postln});
