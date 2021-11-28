@@ -386,20 +386,42 @@ Convenience {
     }
 
     *record { | name, bus, duration = \inf, format = "wav", server |
-      // also impl to record Bus'ses iggå, ig bar SoundIn.ar(bus) men ~min_flotte_bus
       if(name.isNil.not and: (bus.isNil.not), {
         fork{
           var fileName = name.asString ++ "_" ++ Date.gmtime.stamp.asString.replace(($ ),"_").replace($:,"");
           var recPath = Platform.recordingsDir ++ "/Convenient_Recordings/" ++ fileName ++ "." ++ format;
           var ndefName = (name.asString ++ "_convenient_recorder").asSymbol;
+          var num_chans;
           server = server ? Server.default;
-          // server.recHeaderFormat_(format);
-          Ndef(ndefName, {
-            SoundIn.ar(bus);
-          });
+          switch ( bus.class.asSymbol,
+            \Integer,  {
+              num_chans = 1;
+              Ndef(ndefName, {
+                SoundIn.ar(bus);
+              });
+            },
+             \Array, {
+              num_chans = bus.size;
+              Ndef(ndefName, {
+                SoundIn.ar(bus);
+              });
+            },
+             \Bus, {
+              num_chans = bus.numChannels;
+              Ndef(ndefName, {
+                In.ar(bus, num_chans);
+              });
+            },
+            {
+              num_chans = 1;
+              Ndef(ndefName, {
+                SoundIn.ar(bus);
+              });
+            }
+          );
           // 10.do{server.sync}; // lol, actually works
           1.wait; // hacky, should use condition
-          server.record(recPath, Ndef(ndefName).bus, bus.asArray.size, Ndef(ndefName).nodeID, duration);
+          server.record(recPath, Ndef(ndefName).bus, num_chans, Ndef(ndefName).nodeID, duration);
         }
       }, {
         "C: check name and bus please".throw;
