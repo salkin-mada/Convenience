@@ -1,7 +1,7 @@
 Convenience {
     // user config
     classvar >loadSynths = true; // should crawler auto load synths
-    classvar >verbosePosts = false; // debug or interest
+    classvar >verbose = false; // debug or interest
     classvar >suggestions = false; // you want some?
     classvar <>numFxChannels = 2; // default number of fx channels
     classvar <>pattern_history_size = 100; // for *repeat
@@ -15,7 +15,7 @@ Convenience {
 
     classvar working = false;
 
-    const <supportedExtensions = #[\wav, \wave, \aif, \aiff, \flac, \ogg];
+    const <supportedExtensions = #[\wav, \wave, \aif, \aiff, \aifc, \flac, \ogg];
 
     *initClass { | server |
         server = server ? Server.default;
@@ -151,7 +151,7 @@ Convenience {
                     ^nil
                 }, {
                     // add to Convenience pattern set reference
-                    if(verbosePosts) {"new  - welcome".postln};
+                    if(verbose) {"new  - welcome".postln};
                     patterns.add(name.asSymbol);
                 })
             });
@@ -247,7 +247,7 @@ Convenience {
 
             if(patterns_history.includesKey(name).not) {
                 patterns_history.add(name.asSymbol -> List.new);
-                if(verbosePosts) {"adding pattern history list for %".format(name).postln};
+                if(verbose) {"adding pattern history list for %".format(name).postln};
             };
 
             Pdef(name,
@@ -386,46 +386,46 @@ Convenience {
     }
 
     *record { | name, bus, duration = \inf, format = "wav", server |
-      if(name.isNil.not and: (bus.isNil.not), {
-        fork{
-          var fileName = name.asString ++ "_" ++ Date.gmtime.stamp.asString.replace(($ ),"_").replace($:,"");
-          var recPath = Platform.recordingsDir ++ "/Convenient_Recordings/" ++ fileName ++ "." ++ format;
-          var ndefName = (name.asString ++ "_convenient_recorder").asSymbol;
-          var num_chans;
-          server = server ? Server.default;
-          switch ( bus.class.asSymbol,
-            \Integer,  {
-              num_chans = 1;
-              Ndef(ndefName, {
-                SoundIn.ar(bus);
-              });
-            },
-             \Array, {
-              num_chans = bus.size;
-              Ndef(ndefName, {
-                SoundIn.ar(bus);
-              });
-            },
-             \Bus, {
-              num_chans = bus.numChannels;
-              Ndef(ndefName, {
-                In.ar(bus, num_chans);
-              });
-            },
-            {
-              num_chans = 1;
-              Ndef(ndefName, {
-                SoundIn.ar(bus);
-              });
+        if(name.isNil.not and: (bus.isNil.not), {
+            fork{
+                var fileName = name.asString ++ "_" ++ Date.localtime.stamp.asString.replace(($ ),"_").replace($:,"");
+                var recPath = Platform.recordingsDir ++ "/CR/" ++ fileName ++ "." ++ format; // Convenient Recordings
+                var ndefName = (name.asString ++ "_convenient_recorder").asSymbol;
+                var num_chans;
+                server = server ? Server.default;
+                switch ( bus.class.asSymbol,
+                    \Integer,  {
+                        num_chans = 1;
+                        Ndef(ndefName, {
+                            SoundIn.ar(bus);
+                        });
+                    },
+                    \Array, {
+                        num_chans = bus.size;
+                        Ndef(ndefName, {
+                            SoundIn.ar(bus);
+                        });
+                    },
+                    \Bus, {
+                        num_chans = bus.numChannels;
+                        Ndef(ndefName, {
+                            In.ar(bus, num_chans);
+                        });
+                    },
+                    {
+                        num_chans = 1;
+                        Ndef(ndefName, {
+                            SoundIn.ar(bus);
+                        });
+                    }
+                );
+                // 10.do{server.sync}; // lol, actually works
+                1.wait; // hacky, should use condition
+                server.record(recPath, Ndef(ndefName).bus, num_chans, Ndef(ndefName).nodeID, duration);
             }
-          );
-          // 10.do{server.sync}; // lol, actually works
-          1.wait; // hacky, should use condition
-          server.record(recPath, Ndef(ndefName).bus, num_chans, Ndef(ndefName).nodeID, duration);
-        }
-      }, {
-        "C: check name and bus please".throw;
-      })
+        }, {
+            "C: check name and bus please".throw;
+        })
     }
 
     // *pauseRecording { | server |
@@ -433,58 +433,59 @@ Convenience {
     //       server.pauseRecording;
     // }
     *stopRecording { | server |
-          server = server ? Server.default;
-          server.stopRecording;
+        server = server ? Server.default;
+        server.stopRecording;
     }
 
     *pb { | name, buffer, pos=0.0, rate=1.0, trigger, loop=0, bus=#[0,1], amp=0.5 |
     if (name.isNil.not and: buffer.isNil.not) {
-      if (rate.isUGen) {
-        Ndef(name).map(\rate, rate);
-      } {
-        Ndef(name).set(\rate, rate);
-      };
-      if (pos.isUGen) {
-        Ndef(name).map(\position, pos);
-      } {
-        Ndef(name).set(\position, pos);
-      };
-      if (trigger.isUGen) {
-        Ndef(name).map(\trigger, trigger);
-      } {
-        Ndef(name).set(\trigger, trigger);
-      };
-      if (amp.isUGen) {
-        Ndef(name).map(\amp, amp);
-      } {
-        Ndef(name).set(\amp, amp);
-      };
-      Ndef(name).set(\loop, loop);
-      Ndef(name, {
-        var frames= BufFrames.kr(buffer);
-        var sig= ConvenientBufferPlayer.ar(
-          numChannels:buffer.numChannels,
-          bufnum:buffer,
-          rate:\rate.ar(1.0)*BufRateScale.kr(buffer),
-          startPos:\position.ar(0.0)*frames,
-          trigger:\trigger.ar(1),
-          loop:\loop.kr(0)
-        );
-        Limiter.ar(LeakDC.ar(sig * \amp.ar(1.0)));
-      });
-      Ndef(name).playN(bus);
-      ^Ndef(name);
+        if (rate.isUGen) {
+            Ndef(name).map(\rate, rate);
+        } {
+            Ndef(name).set(\rate, rate);
+        };
+        if (pos.isUGen) {
+            Ndef(name).map(\position, pos);
+        } {
+            Ndef(name).set(\position, pos);
+        };
+        if (trigger.isUGen) {
+            Ndef(name).map(\trigger, trigger);
+        } {
+            Ndef(name).set(\trigger, trigger);
+        };
+        if (amp.isUGen) {
+            Ndef(name).map(\amp, amp);
+        } {
+            Ndef(name).set(\amp, amp);
+        };
+        Ndef(name).set(\loop, loop);
+        Ndef(name, {
+            var frames= BufFrames.kr(buffer);
+            var sig= ConvenientBufferPlayer.ar(
+                numChannels:buffer.numChannels,
+                bufnum:buffer,
+                rate:\rate.ar(1.0)*BufRateScale.kr(buffer),
+                startPos:\position.ar(0.0)*frames,
+                trigger:\trigger.ar(1),
+                loop:\loop.kr(0)
+            );
+            Limiter.ar(LeakDC.ar(sig * \amp.ar(1.0)));
+        });
+        Ndef(name).playN(bus);
+        ^Ndef(name);
     } {
-      "C:: needs a name / buffer".postln;
+        "C:: needs a name / buffer".postln;
     }
-  }
+    }
+
     *sb { | name, fadeTime = 0.1 |
-    if (name.isNil.not) {
-      ^Ndef(name).stop(fadeTime);
-    } {
-      "C:: needs a name".postln;
+        if (name.isNil.not) {
+            ^Ndef(name).stop(fadeTime);
+        } {
+            "C:: needs a name".postln;
+        }
     }
-  }
 
     *clear { | name ...args |
         if (name.isNil.not and: patterns.includes(name.asSymbol) or: inputs.includes(name.asSymbol), {
@@ -730,11 +731,11 @@ Convenience {
         // going directly to parsing!
         //
         if(PathName(initpath).isFolder, {
-            if(verbosePosts){"crawl:: this is a folder".postln};
+            if(verbose){"crawl:: this is a folder".postln};
             this.prParseFolders(initpath, depth, force, server);
         }); 
         if(PathName(initpath).isFile, {
-            if(verbosePosts){"crawl:: this is a file".postln};
+            if(verbose){"crawl:: this is a file".postln};
             this.prFileToLoadFunc(initpath, server);
         }); 
 
@@ -754,7 +755,7 @@ Convenience {
     /*protection against setting an initpath ending with / or // etc,
     which will break the depth control*/
     while({initpath.endsWith("/")}, {
-        if(verbosePosts.asBoolean, {"removed /".postln; });
+        if(verbose.asBoolean, {"removed /".postln; });
         initpath = initpath[..initpath.size-2]
     });
 
@@ -766,7 +767,7 @@ Convenience {
     server = server ? Server.default;
     dir = initpath; //update getter
 
-    if (verbosePosts, {
+    if (verbose, {
         "initDepthCount -> \n\t %".format(initPathDepth).postln;
         "\n__prParseFolders__".post;
         "\n\tinitpath: %".format(initpath).post;
@@ -776,7 +777,7 @@ Convenience {
     PathName(initpath).deepFiles.do{ | item |
         var loadFolderFlag;
 
-        if (verbosePosts, {
+        if (verbose, {
             "item -> \n\t % \n\t depth -> \n\t\t %".format(item.fullPath, item.fullPath.split(thisProcess.platform.pathSeparator).size).postln;
         });
 
@@ -799,15 +800,15 @@ Convenience {
             // add to folderPaths if not already present
             if (folderPaths.includesKey(folderKey).not, {
                 folderPaths.add(folderKey -> item.pathOnly.asSymbol);
-                if(verbosePosts, {"added % to folderPaths".format(folderKey).postln});
+                if(verbose, {"added % to folderPaths".format(folderKey).postln});
             }, {
                 // folder already added to folderPaths
-                if (verbosePosts, {"folder % included in folderPaths will not be added again".format(item.pathOnly.asSymbol).postln});
+                if (verbose, {"folder % included in folderPaths will not be added again".format(item.pathOnly.asSymbol).postln});
             });
         });
     };
 
-    if (verbosePosts, {folderPaths.keysDo{ | item |"\n\t__prParseFolders__folderPath: %\n".format(item).postln}});
+    if (verbose, {folderPaths.keysDo{ | item |"\n\t__prParseFolders__folderPath: %\n".format(item).postln}});
 
     if (anythingFound.asBoolean.not, {"\n\tno folders is staged to load\n".postln});
 
@@ -844,10 +845,10 @@ Convenience {
                     //"Convenience::crawl -> done piping and loading %".format(key).postln;
 
                 }, {
-                    if (verbosePosts, {"Convenience::crawl -> nothing new to %".format(key).postln})
+                    if (verbose, {"Convenience::crawl -> nothing new to %".format(key).postln})
                 })
             };
-            if (verbosePosts, {"Convenience:: pipeFolderToloadFunc:: loading done".postln})
+            if (verbose, {"Convenience:: pipeFolderToloadFunc:: loading done".postln})
 
         }, {
             "C::crawl -> no folders that have not already been loaded".postln;
@@ -857,10 +858,10 @@ Convenience {
                 // if (buffers.includesKey(key).not,{
                   this.load(path.asString, "force", server);
                 // }, {
-                  // if (verbosePosts, {"Convenience::crawl -> nothing new to %".format(key).postln})
+                  // if (verbose, {"Convenience::crawl -> nothing new to %".format(key).postln})
                 // })
               };
-              if (verbosePosts, {"Convenience:: pipeFolderToloadFunc:: loading done".postln})
+              if (verbose, {"Convenience:: pipeFolderToloadFunc:: loading done".postln})
             }
         });
 
@@ -906,7 +907,7 @@ Convenience {
                     // check if file is dot type
                     file.fileName.do{ | char, i |
                         if(char.isPunct and: i == 0, {
-                            if(verbosePosts == true, {
+                            if(verbose == true, {
                                 "found a dot file - avoiding -> %".format(file).postln
                             });
                             hiddenFile = true;
@@ -930,14 +931,14 @@ Convenience {
                         numChannels = SoundFile.use(file.fullPath, {arg qfile; qfile.numChannels});
                         server.sync;
 
-                        if(verbosePosts.asBoolean,{
+                        if(verbose.asBoolean,{
                             "file: %\n\tcontains % chans".format(file.fileName, numChannels).postln;
                         });
 
                         case
                         {numChannels == 1}
                         {
-                            if(verbosePosts.asBoolean,{"convenience:: loading 1 channels".postln});
+                            if(verbose.asBoolean,{"convenience:: loading 1 channels".postln});
                             Buffer.readChannel(server, file.fullPath, 
                                 channels: [0],
                                 // action: {condition.unhang}
@@ -945,7 +946,7 @@ Convenience {
                         }
                         {numChannels == 2}
                         {
-                            if(verbosePosts.asBoolean,{"convenience:: loading 2 channels".postln});
+                            if(verbose.asBoolean,{"convenience:: loading 2 channels".postln});
                             Buffer.readChannel(server, file.fullPath,
                                 channels: [numChannels.collect{arg i; i}].flat,
                                 //channels: [numChannels.collect{arg i; i}].flat.select{} // only select the chans we want
@@ -954,7 +955,7 @@ Convenience {
                         }
                         {numChannels > 2}
                         {
-                            if(verbosePosts.asBoolean,{"convenience:: loading 1 channels".postln});
+                            if(verbose.asBoolean,{"convenience:: loading 1 channels".postln});
                             Buffer.readChannel(server, file.fullPath;,
                                 channels: [0],
                                 // action: {condition.unhang}
@@ -962,7 +963,7 @@ Convenience {
                         }
                         {numChannels == 0}
                         {
-                            if(verbosePosts.asBoolean,{"convenience:: does not understand file channel count".warn});
+                            if(verbose.asBoolean,{"convenience:: does not understand file channel count".warn});
                             // nil
                         };
                         // condition.hang;
@@ -985,7 +986,7 @@ Convenience {
                 // add loadedBuffers to dictionary with key from common folder
                 if (loadedBuffers.isEmpty.not, {
                     if (buffers.includesKey(folderKey).not, {
-                        if(verbosePosts.asBoolean,{
+                        if(verbose.asBoolean,{
                             "new folder key: %".format(folderKey).postln;
                         });
                         //  add and remove spaces in folder name
@@ -998,7 +999,7 @@ Convenience {
                     // folderPaths.removeAt(folderKey);
                 });
             }, {
-                if(verbosePosts.asBoolean,{
+                if(verbose.asBoolean,{
                     "folder % already loaded".format(folderKey).postln
                 });
             });
@@ -1014,20 +1015,20 @@ Convenience {
             file = PathName(path);
             working = true;
 
-            if(verbosePosts) {"Convenience:: *load -> it's a file".postln};
+            if(verbose) {"Convenience:: *load -> it's a file".postln};
 
             // get numChannels of file "before" its read into buffer
             numChannels = SoundFile.use(file.fullPath, {arg qfile; qfile.numChannels});
             server.sync;
 
-            if(verbosePosts.asBoolean,{
+            if(verbose.asBoolean,{
                 "file: %\n\tcontains % chans".format(file.fullPath, numChannels).postln;
             });
 
             case
             {numChannels == 1}
             {
-                if(verbosePosts.asBoolean,{"convenience:: loading 1 channels".postln});
+                if(verbose.asBoolean,{"convenience:: loading 1 channels".postln});
                 buffer = Buffer.readChannel(server, file.fullPath,
                     channels: [0],
                     // action: {condition.unhang}
@@ -1035,7 +1036,7 @@ Convenience {
             }
             {numChannels == 2}
             {
-                if(verbosePosts.asBoolean,{"convenience:: loading 2 channels".postln});
+                if(verbose.asBoolean,{"convenience:: loading 2 channels".postln});
                 buffer = Buffer.readChannel(server, file.fullPath,
                     channels: [numChannels.collect{arg i; i}].flat,
                     // //channels: [numChannels.collect{arg i; i}].flat.select{} // only select the chans we want
@@ -1044,7 +1045,7 @@ Convenience {
             }
             {numChannels > 2}
             {
-                if(verbosePosts.asBoolean,{"convenience:: loading 1 channels".postln});
+                if(verbose.asBoolean,{"convenience:: loading 1 channels".postln});
                 buffer = Buffer.readChannel(server, file.fullPath,
                     channels: [0],
                     // action: {condition.unhang}
@@ -1052,7 +1053,7 @@ Convenience {
             }
             {numChannels == 0}
             {
-                if(verbosePosts.asBoolean,{"convenience:: does not understand file channel count".warn});
+                if(verbose.asBoolean,{"convenience:: does not understand file channel count".warn});
                 nil
             };
 
@@ -1087,7 +1088,7 @@ Convenience {
                     // check if file is dot type
                     file.fileName.do{ | char, i |
                         if(char.isPunct and: i == 0, {
-                            if(verbosePosts == true, {
+                            if(verbose == true, {
                                 "found a dot file - avoiding -> %".format(file).postln
                             });
                             hiddenFile = true;
@@ -1111,14 +1112,14 @@ Convenience {
                         numChannels = SoundFile.use(file.fullPath, {arg qfile; qfile.numChannels});
                         server.sync;
 
-                        if(verbosePosts.asBoolean,{
+                        if(verbose.asBoolean,{
                             "file: %\n\tcontains % chans".format(file.fileName, numChannels).postln;
                         });
 
                         case
                         {numChannels == 1}
                         {
-                            if(verbosePosts.asBoolean,{"convenience:: loading 1 channels".postln});
+                            if(verbose.asBoolean,{"convenience:: loading 1 channels".postln});
                             Buffer.readChannel(server, file.fullPath, 
                                 channels: [0],
                                 // action: {condition.unhang}
@@ -1126,7 +1127,7 @@ Convenience {
                         }
                         {numChannels == 2}
                         {
-                            if(verbosePosts.asBoolean,{"convenience:: loading 2 channels".postln});
+                            if(verbose.asBoolean,{"convenience:: loading 2 channels".postln});
                             Buffer.readChannel(server, file.fullPath,
                                 channels: [numChannels.collect{arg i; i}].flat,
                                 //channels: [numChannels.collect{arg i; i}].flat.select{} // only select the chans we want
@@ -1135,7 +1136,7 @@ Convenience {
                         }
                         {numChannels > 2}
                         {
-                            if(verbosePosts.asBoolean,{"convenience:: loading 1 channels".postln});
+                            if(verbose.asBoolean,{"convenience:: loading 1 channels".postln});
                             Buffer.readChannel(server, file.fullPath;,
                                 channels: [0],
                                 // action: {condition.unhang}
@@ -1143,7 +1144,7 @@ Convenience {
                         }
                         {numChannels == 0}
                         {
-                            if(verbosePosts.asBoolean,{"convenience:: does not understand file channel count".warn});
+                            if(verbose.asBoolean,{"convenience:: does not understand file channel count".warn});
                             // nil
                         };
                         // condition.hang;
@@ -1166,7 +1167,7 @@ Convenience {
                 // add loadedBuffers to dictionary with key from common folder
                 if (loadedBuffers.isEmpty.not, {
                     if (buffers.includesKey(folderKey).not, {
-                        if(verbosePosts.asBoolean,{
+                        if(verbose.asBoolean,{
                           "C::crwal:foce -> new folder key: %".format(folderKey).postln;
                         });
                         //  add and remove spaces in folder name
@@ -1179,7 +1180,7 @@ Convenience {
                     // folderPaths.removeAt(folderKey);
                 });
             } {
-                if(verbosePosts.asBoolean,{
+                if(verbose.asBoolean,{
                   "folder % already loaded -> but forcing".format(folderKey).postln
                 });
                 files = folder.entries.select { | file |
@@ -1189,7 +1190,7 @@ Convenience {
                     // check if file is dot type
                     file.fileName.do{ | char, i |
                         if(char.isPunct and: i == 0, {
-                            if(verbosePosts == true, {
+                            if(verbose == true, {
                                 "found a dot file - avoiding -> %".format(file).postln
                             });
                             hiddenFile = true;
@@ -1222,14 +1223,14 @@ Convenience {
                         numChannels = SoundFile.use(file.fullPath, {arg qfile; qfile.numChannels});
                         server.sync;
 
-                        if(verbosePosts.asBoolean,{
+                        if(verbose.asBoolean,{
                             "file: %\n\tcontains % chans".format(file.fileName, numChannels).postln;
                         });
 
                         case
                         {numChannels == 1}
                         {
-                            if(verbosePosts.asBoolean,{"convenience:: loading 1 channels".postln});
+                            if(verbose.asBoolean,{"convenience:: loading 1 channels".postln});
                             Buffer.readChannel(server, file.fullPath, 
                                 channels: [0],
                                 // action: {condition.unhang}
@@ -1237,7 +1238,7 @@ Convenience {
                         }
                         {numChannels == 2}
                         {
-                            if(verbosePosts.asBoolean,{"convenience:: loading 2 channels".postln});
+                            if(verbose.asBoolean,{"convenience:: loading 2 channels".postln});
                             Buffer.readChannel(server, file.fullPath,
                                 channels: [numChannels.collect{arg i; i}].flat,
                                 //channels: [numChannels.collect{arg i; i}].flat.select{} // only select the chans we want
@@ -1246,7 +1247,7 @@ Convenience {
                         }
                         {numChannels > 2}
                         {
-                            if(verbosePosts.asBoolean,{"convenience:: loading 1 channels".postln});
+                            if(verbose.asBoolean,{"convenience:: loading 1 channels".postln});
                             Buffer.readChannel(server, file.fullPath;,
                                 channels: [0],
                                 // action: {condition.unhang}
@@ -1254,7 +1255,7 @@ Convenience {
                         }
                         {numChannels == 0}
                         {
-                            if(verbosePosts.asBoolean,{"convenience:: does not understand file channel count".warn});
+                            if(verbose.asBoolean,{"convenience:: does not understand file channel count".warn});
                             // nil
                         };
                         // condition.hang;
@@ -1276,7 +1277,7 @@ Convenience {
 
                 // add loadedBuffers to dictionary with key from common folder
                 if (loadedBuffers.isEmpty.not) {
-                        if(verbosePosts.asBoolean,{
+                        if(verbose.asBoolean,{
                           "C::crawl:force -> adding new files to folder key: %".format(folderKey).postln;
                         });
                         buffers.keysValuesDo{ | key, value |
@@ -1409,7 +1410,7 @@ Convenience {
 
         case
         // {folder.isSymbol}{ // wioaw.. not working. jeebz
-        {folder.isKindOf(Symbol)}{
+        {folder.isKindOf(Symbol)} {
             // "folder symbol length %".format(folder.asString.size).postln;
             if (folder.asString.isEmpty)
             {folder = nil; "symbol was empty".postln}
@@ -1627,7 +1628,7 @@ Convenience {
     filepath = filepath.tr(Platform.pathSeparator , $/);
     server = server ? Server.default;
 
-    if (verbosePosts, {
+    if (verbose, {
         "\n\tfile path: %".format(filepath).postln;
     });
 
@@ -1668,7 +1669,7 @@ Convenience {
                         this.load(path.asString, "file", server);
                     }.fork(AppClock);
                 };
-                if (verbosePosts, {"Convenience:: prFileToLoadFunc loading done".postln})
+                if (verbose, {"Convenience:: prFileToLoadFunc loading done".postln})
 
             }, {
                 "Convenience::crawl -> file with that name has already been loaded".postln;
