@@ -2,8 +2,8 @@ Convenience {
     // user config
     classvar >loadSynths = true; // should crawler auto load synths
     classvar >verbose = false; // debug or interest
-    classvar >suggestions = false; // you want some?
     classvar <>numFxChannels = 2; // default number of fx channels
+    classvar <>maxChannelArraySize = 8; // see Core/BufferPlayers.sc
     classvar <>pattern_history_size = 100; // for *repeat
 
     // private config
@@ -27,29 +27,14 @@ Convenience {
         inputs = IdentitySet.new;
         loadFn = #{ | server | Convenience.prPipeFoldersToLoadFunc(server: server) };
         this.prAddEventType;
-        "\n*** Convenience is possible ***".postln;
+        "\n*** Convenience enabled ***".postln;
         if(Platform.ideName=="scnvim", {
-            "SCNvim FTW:".postln;
-        });
-        if (suggestions, {
-            server.doWhenBooted({
-                this.suggestions
-            })
+            "... -.-. -. ...- .. --".postln;
         });
         // group for Convenience Ndefs
         // server.doWhenBooted{
         // 	nodegroup = Group.new; "adding group for Convenience".postln
         // }
-    }
-
-    *suggestions {
-        if (Main.packages.asDict.includesKey(\Else).not, {
-            "\n\tConvenience:: suggests to install the 'Else' Quark".postln;
-        });
-        if (Main.packages.asDict.includesKey(\Utopia).not, {
-            "\n\tConvenience:: suggests to install 'Utopia' Quark (see: BeaconClock)".postln;
-        });
-        "\n\tConvenience:: welcome".postln;
     }
 
     // would be nice to have something for thisProcess.hardstop ( Main )
@@ -103,11 +88,11 @@ Convenience {
         ]
     }
 
-    *p { arg name, bus = 0, numChannels= 2, type=\Convenience, seed=666, quant= 0, folder, index= 0, dur= 4,
+    *p { | name, bus = 0, numChannels= 2, type=\Convenience, seed=666, quant= 0, folder, index= 0, dur= 4,
         timingOffset = 0, stretch= 1.0, pos= 0, loop= 0, rate= 1, degree= 0, octave= 3, root= 0, scale,
         cutoff= 22e3, res= 0.01, fgain= 1.0, ftype= 0, bass = 0, pan= 0, width= 2.0, spread= 0.5, amp= 0.5,
         attack= 0.01, sustain=1.0, release= 0.5, tempo, tuningOnOff= 0, basefreq= 440, pst= 0, pr= 1.0, fr= 1.0,
-        replay= 1, server ...args;
+        replay= 1, server ...args |
 
         var properties, pdefnProperties = List.new;
         properties = Dictionary.with(*this.properties.collect{arg item; item});
@@ -227,7 +212,7 @@ Convenience {
             }); */
 
             pdefnProperties = pdefnProperties.collect{ | key |
-                var pdefn;
+                var pdefn, value;
                 // allow empty symbols in folder property
                 if (key == 'folder') {
                     // if (folder.asString.isEmpty) {
@@ -240,7 +225,18 @@ Convenience {
                 //{\type} {[key.asSymbol, type]}
                 //{\scale} {[key.asSymbol, scale]}
                 //{
-                pdefn = Pdefn((name.asString++"_"++key.asString).asSymbol, properties.at(key)).pattern;
+
+                // wrap Ndef bus input in Pfunc
+                if(properties.at(key).class == Ndef) {
+                    // TODO: check if it is Ndef with .bus call?
+                    value = Pfunc{ properties.at(key).bus.asMap };
+                    // if (key == 'index') {
+                    //     value = value.asInteger;
+                    // }
+                } {
+                    value = properties.at(key);
+                };
+                pdefn = Pdefn((name.asString++"_"++key.asString).asSymbol, value).pattern;
                 [key.asSymbol, pdefn]
                 //}
             };
@@ -350,7 +346,11 @@ Convenience {
     }
 
     *repeat { | name, min=0, max=5, repeats = inf |
-        var slice_of_history = patterns_history[name].copyRange(min, max);
+        var slice_of_history, min_, max_;
+        // min_ = this.pattern_history_size-min_;
+        // max_ = min_-max_;
+        // slice_of_history = patterns_history[name].copyRange(max_, min_);
+        slice_of_history = patterns_history[name].copyRange(min, max);
         Pdef(name, Pbind(*slice_of_history.flopDict(unbubble:false).collect{|x| Pseq(x, repeats)}.asKeyValuePairs));
     }
 
@@ -385,6 +385,10 @@ Convenience {
         inputs.clear;
     }
 
+    *bus { | name |
+        ^Ndef(name.asSymbol).bus
+    }
+
     *record { | name, bus, duration = \inf, format = "wav", server |
         if(name.isNil.not and: (bus.isNil.not), {
             fork{
@@ -407,6 +411,14 @@ Convenience {
                         });
                     },
                     \Bus, {
+                        num_chans = bus.numChannels;
+                        Ndef(ndefName, {
+                            In.ar(bus, num_chans);
+                        });
+                    },
+                    \Symbol, {
+                        ndefName = (bus.asString ++ "_convenient_recorder").asSymbol;
+                        bus = Ndef(bus).bus;
                         num_chans = bus.numChannels;
                         Ndef(ndefName, {
                             In.ar(bus, num_chans);

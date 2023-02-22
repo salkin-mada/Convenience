@@ -1,17 +1,15 @@
-// ~numMaxChannels = 4; // how many channels should Convenience support
 /*	  --------------------------------------  */
 /*	  rate style							 */
 /*	  ------------------------------------- */
-// ~numMaxChannels.do{arg channels;
-4.do{arg channels;
-    var freeSelfDelay=0.05;//var0.1før
+Convenience.maxChannelArraySize.do{arg channels;
+    var freeSelfDelay=0.01;
     channels = channels + 1;
 
     "Convenience:: building % channel output synths".format(channels).postln;
 
     SynthDef(("ConvenienceMono_"++channels).asSymbol, {
         |
-        bufnum, bus = 0, loop = 0, rate = 1, pan = 0, spread = 0.5, width = 2, amp = 0.5,
+        bufnum, out, loop = 0, rate = 1, pan = 0, spread = 0.5, width = 2, amp = 0.5,
         attack = 0.01, sustain = 0.5, release = 1.0, pos = 0,
         gate = 1, cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0.0
         |
@@ -32,12 +30,12 @@
         // sig = SplayAz.ar(channels, sig, spread: spread, width: width, center: pan, level: amp);
         sig = Pan2.ar(in:sig, pos:pan, level:amp);
         sig = LeakDC.ar(sig);
-        Out.ar(bus, (sig*env));
+        Out.ar(out, (sig*env));
     }).add;
 
     SynthDef(("ConvenienceStereo_"++channels).asSymbol, {
         |
-        bufnum, bus = 0, loop = 0, rate = 1, pan = 0, spread = 0.5, width = 2, amp = 0.5,
+        bufnum, out, loop = 0, rate = 1, pan = 0, spread = 0.5, width = 2, amp = 0.5,
         attack = 0.01, sustain = 0.5, release = 1.0, pos = 0,
         gate = 1, cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0.0
         |
@@ -57,7 +55,7 @@
         sig = sig + (LPF.ar(sig, 100, bass));
         sig = SplayAz.ar(channels, sig, spread: spread, width: width, center: pan, level: amp);
         sig = LeakDC.ar(sig);
-        Out.ar(bus, (sig*env));
+        Out.ar(out, (sig*env));
     }).add;
 
     /*	  --------------------------------------  */
@@ -65,7 +63,7 @@
     /*	  ------------------------------------- */
     SynthDef(("ConvenienceMonoScale_"++channels).asSymbol, {
         |
-        bufnum, bus = 0, loop = 0, pan = 0, spread = 0.5, width = 2, amp = 0.5,
+        bufnum, out, loop = 0, pan = 0, spread = 0.5, width = 2, amp = 0.5,
         attack = 0.01, sustain = 0.5, release = 1.0, pos = 0,
         gate = 1, cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0.0, basefreq=440, freq
         |
@@ -87,12 +85,12 @@
         // sig = SplayAz.ar(channels, sig, spread: spread, width: width, center: pan, level: amp);
         sig = Pan2.ar(in:sig, pos:pan, level:amp);
         sig = LeakDC.ar(sig);
-        Out.ar(bus, (sig*env));
+        Out.ar(out, (sig*env));
     }).add;
 
     SynthDef(("ConvenienceStereoScale_"++channels).asSymbol, {
         |
-        bufnum, bus = 0, loop = 0, pan = 0, spread = 0.5, width = 2, amp = 0.5,
+        bufnum, out, loop = 0, pan = 0, spread = 0.5, width = 2, amp = 0.5,
         attack = 0.01, sustain = 0.5, release = 1.0, pos = 0,
         gate = 1, cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0.0, basefreq=440, freq
         |
@@ -113,7 +111,7 @@
         sig = sig + (LPF.ar(sig, 100, bass));
         sig = SplayAz.ar(channels, sig, spread: spread, width: width, center: pan, level: amp);
         sig = LeakDC.ar(sig);
-        Out.ar(bus, (sig*env));
+        Out.ar(out, (sig*env));
     }).add;
 
     /*	  --------------------------------------  */
@@ -177,7 +175,7 @@
 
     SynthDef(("ConvenienceMonoPitchShift_"++channels).asSymbol, {
         |
-        bufnum, bus = 0, loop = 0, rate = 1, pan = 0, spread = 0.5, width = 2, amp = 0.5,
+        bufnum, out, loop = 0, rate = 1, pan = 0, spread = 0.5, width = 2, amp = 0.5,
         attack = 0.01, sustain = 0.5, release = 1.0, pos = 0,
         gate = 1, cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0.0, pr = 1.0, fr = 1.0
         |
@@ -204,12 +202,12 @@
         // sig = SplayAz.ar(channels, sig, spread: spread, width: width, center: pan, level: amp);
         sig = Pan2.ar(in:sig, pos:pan, level:amp);
         sig = LeakDC.ar(sig);
-        Out.ar(bus, (sig*env));
+        Out.ar(out, (sig*env));
     }).add;
 
     SynthDef(("ConvenienceStereoPitchShift_"++channels).asSymbol, {
         |
-        bufnum, bus = 0, loop = 0, rate = 1, pan = 0, spread = 0.5, width = 2, amp = 0.5,
+        bufnum, out, loop = 0, rate = 1, pan = 0, spread = 0.5, width = 2, amp = 0.5,
         attack = 0.01, sustain = 0.5, release = 1.0, pos = 0,
         gate = 1, cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0.0, pr = 1.0, fr = 1.0
         |
@@ -235,12 +233,12 @@
         sig = sig + (LPF.ar(sig, 100, bass));
         sig = SplayAz.ar(channels, sig, spread: spread, width: width, center: pan, level: amp);
         sig = LeakDC.ar(sig);
-        Out.ar(bus, (sig*env));
+        Out.ar(out, (sig*env));
     }).add;
 
     SynthDef(("ConvenienceMonoPitchShiftScale_"++channels).asSymbol, {
         |
-        bufnum, bus = 0, loop = 0, pan = 0, spread = 0.5, width = 2, amp = 0.5,
+        bufnum, out, loop = 0, pan = 0, spread = 0.5, width = 2, amp = 0.5,
         attack = 0.01, sustain = 0.5, release = 1.0, pos = 0,
         gate = 1, cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0.0, basefreq=440, freq,
         pr = 1.0, fr = 1.0
@@ -269,12 +267,12 @@
         // sig = SplayAz.ar(channels, sig, spread: spread, width: width, center: pan, level: amp);
         sig = Pan2.ar(in:sig, pos:pan, level:amp);
         sig = LeakDC.ar(sig);
-        Out.ar(bus, (sig*env));
+        Out.ar(out, (sig*env));
     }).add;
 
     SynthDef(("ConvenienceStereoPitchShiftScale_"++channels).asSymbol, {
         |
-        bufnum, bus = 0, loop = 0, pan = 0, spread = 0.5, width = 2, amp = 0.5,
+        bufnum, out, loop = 0, pan = 0, spread = 0.5, width = 2, amp = 0.5,
         attack = 0.01, sustain = 0.5, release = 1.0, pos = 0,
         gate = 1, cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0.0, basefreq=440, freq,
         pr = 1.0, fr = 1.0
@@ -302,6 +300,6 @@
         sig = sig + (LPF.ar(sig, 100, bass));
         sig = SplayAz.ar(channels, sig, spread: spread, width: width, center: pan, level: amp);
         sig = LeakDC.ar(sig);
-        Out.ar(bus, (sig*env));
+        Out.ar(out, (sig*env));
     }).add;
 }
