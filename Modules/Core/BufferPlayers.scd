@@ -4,6 +4,7 @@
 /*	  ------------------------------------- */
 // ~numMaxChannels.do{arg channels;
 4.do{arg channels;
+    var freeSelfDelay=0.05;//var0.1før
     channels = channels + 1;
 
     "Convenience:: building % channel output synths".format(channels).postln;
@@ -25,10 +26,11 @@
             loop: loop
         );
         env = EnvGen.ar(Env.linen(attack, sustain, release), gate);
-        FreeSelf.kr(TDelay.kr(Done.kr(env),0.1));
+        FreeSelf.kr(TDelay.kr(Done.kr(env),freeSelfDelay));
         sig = DFM1.ar(in: sig, freq: cutoff, res: res, inputgain: fgain, type: ftype);
         sig = sig + (LPF.ar(sig, 100, bass));
-        sig = SplayAz.ar(channels, sig, spread: spread, width: width, center: pan, level: amp);
+        // sig = SplayAz.ar(channels, sig, spread: spread, width: width, center: pan, level: amp);
+        sig = Pan2.ar(in:sig, pos:pan, level:amp);
         sig = LeakDC.ar(sig);
         Out.ar(bus, (sig*env));
     }).add;
@@ -50,7 +52,7 @@
             loop: loop
         );
         env = EnvGen.ar(Env.linen(attack, sustain, release), gate);
-        FreeSelf.kr(TDelay.kr(Done.kr(env),0.1));
+        FreeSelf.kr(TDelay.kr(Done.kr(env),freeSelfDelay));
         sig = DFM1.ar(in: sig, freq: cutoff, res: res, inputgain: fgain, type: ftype);
         sig = sig + (LPF.ar(sig, 100, bass));
         sig = SplayAz.ar(channels, sig, spread: spread, width: width, center: pan, level: amp);
@@ -79,10 +81,11 @@
             loop: loop
         );
         env = EnvGen.ar(Env.linen(attack, sustain, release), gate);
-        FreeSelf.kr(TDelay.kr(Done.kr(env),0.1));
+        FreeSelf.kr(TDelay.kr(Done.kr(env),freeSelfDelay));
         sig = DFM1.ar(in: sig, freq: cutoff, res: res, inputgain: fgain, type: ftype);
         sig = sig + (LPF.ar(sig, 100, bass));
-        sig = SplayAz.ar(channels, sig, spread: spread, width: width, center: pan, level: amp);
+        // sig = SplayAz.ar(channels, sig, spread: spread, width: width, center: pan, level: amp);
+        sig = Pan2.ar(in:sig, pos:pan, level:amp);
         sig = LeakDC.ar(sig);
         Out.ar(bus, (sig*env));
     }).add;
@@ -105,7 +108,7 @@
             loop: loop
         );
         env = EnvGen.ar(Env.linen(attack, sustain, release), gate);
-        FreeSelf.kr(TDelay.kr(Done.kr(env),0.1));
+        FreeSelf.kr(TDelay.kr(Done.kr(env),freeSelfDelay));
         sig = DFM1.ar(in: sig, freq: cutoff, res: res, inputgain: fgain, type: ftype);
         sig = sig + (LPF.ar(sig, 100, bass));
         sig = SplayAz.ar(channels, sig, spread: spread, width: width, center: pan, level: amp);
@@ -189,7 +192,7 @@
             loop: loop
         );
         env = EnvGen.ar(Env.linen(attack, sustain, release), gate);
-        FreeSelf.kr(TDelay.kr(Done.kr(env),0.1));
+        FreeSelf.kr(TDelay.kr(Done.kr(env),freeSelfDelay));
         sig = ConvenientPitchShiftPA.ar(
             sig,
             Pitch.kr(sig)[0], //pitch tracking
@@ -198,7 +201,8 @@
         );
         sig = DFM1.ar(in: sig, freq: cutoff, res: res, inputgain: fgain, type: ftype);
         sig = sig + (LPF.ar(sig, 100, bass));
-        sig = SplayAz.ar(channels, sig, spread: spread, width: width, center: pan, level: amp);
+        // sig = SplayAz.ar(channels, sig, spread: spread, width: width, center: pan, level: amp);
+        sig = Pan2.ar(in:sig, pos:pan, level:amp);
         sig = LeakDC.ar(sig);
         Out.ar(bus, (sig*env));
     }).add;
@@ -220,7 +224,7 @@
             loop: loop
         );
         env = EnvGen.ar(Env.linen(attack, sustain, release), gate);
-        FreeSelf.kr(TDelay.kr(Done.kr(env),0.1));
+        FreeSelf.kr(TDelay.kr(Done.kr(env),freeSelfDelay));
         sig = ConvenientPitchShiftPA.ar(
             sig,
             Pitch.kr(sig)[0], //pitch tracking
@@ -253,7 +257,7 @@
             loop: loop
         );
         env = EnvGen.ar(Env.linen(attack, sustain, release), gate);
-        FreeSelf.kr(TDelay.kr(Done.kr(env),0.1));
+        FreeSelf.kr(TDelay.kr(Done.kr(env),freeSelfDelay));
         sig = ConvenientPitchShiftPA.ar(
             sig,
             Pitch.kr(sig)[0], //pitch tracking
@@ -262,7 +266,8 @@
         );
         sig = DFM1.ar(in: sig, freq: cutoff, res: res, inputgain: fgain, type: ftype);
         sig = sig + (LPF.ar(sig, 100, bass));
-        sig = SplayAz.ar(channels, sig, spread: spread, width: width, center: pan, level: amp);
+        // sig = SplayAz.ar(channels, sig, spread: spread, width: width, center: pan, level: amp);
+        sig = Pan2.ar(in:sig, pos:pan, level:amp);
         sig = LeakDC.ar(sig);
         Out.ar(bus, (sig*env));
     }).add;
@@ -286,7 +291,7 @@
             loop: loop
         );
         env = EnvGen.ar(Env.linen(attack, sustain, release), gate);
-        FreeSelf.kr(TDelay.kr(Done.kr(env),0.1));
+        FreeSelf.kr(TDelay.kr(Done.kr(env),freeSelfDelay));
         sig = ConvenientPitchShiftPA.ar(
             sig,
             Pitch.kr(sig)[0], //pitch tracking
