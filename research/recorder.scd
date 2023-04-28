@@ -1,11 +1,10 @@
 
-Platform.recordingsDir
 
-C.record(\input, [22,23])
-C.stopRecording
+C.record(\input, [22,23]);
+C.stopRecording;
 
-C.crawl(Platform.recordingsDir++"/CR")
-C.list
+C.crawl(Platform.recordingsDir++"/CR");
+C.list;
 
 C.s('æøå', 3)
 (
@@ -28,7 +27,7 @@ C.p('æøå',
     spread: 1.0
 )
 )
-C.bus('æøå').scope
+C.bus('æøå').scope;
 
 C.s('umlaut', 3)
 (
@@ -138,12 +137,8 @@ SynthDef(\satan, {
     sig = sig + (LPF.ar(sig, 100, bass));
     sig = SplayAz.ar(2, sig, spread: spread, width: width, center: pan, level: amp);
     sig = LeakDC.ar(sig);
-    // sig * end
     Out.ar(out, (sig*env));
-    // LocalOut.ar(sig*env);
-    // ReplaceOut.ar(bus, (sig*env));
 }).add;
-// Pdef('lol', Pbind(*[dur: 1/8, scale: Scale.yu, octave: Pseq([6,6,5,5],inf), degree: Prand((0..11), inf)])) // lol
 Pdef('lol', 
     Pseed(666, Pbind(*[
         instrument: \satan,
@@ -234,25 +229,63 @@ C.stopRecording
 
 C.record('satan', [22,23])
 C.stopRecording
-C.crawl("~/Music/SuperCollider Recordings/CR/satan_230223_194732.wav")
+C.crawl("~/soundfiles_lenovo/lithops + fant eeled early mix",2)
+C.crawl("~/.local/share/SuperCollider/Recordings/CR/hallo_230305_111333.wav")
 C.list
+C.memoryUsageMb
+C.free
+C.crawl("~/.local/share/SuperCollider/Recordings/CR/hallop22_230305_130951.flac")
+C.crawl("~/.local/share/SuperCollider/Recordings/CR/hallop22_230305_132200.flac")
 
 (
-C.p('æøå',
-    folder: C.folderNum(1).postln,
+C.p('cccc',
+    folder: C.folderNum(0).postln,
     index: 1,
-    dur: Prand([1/2,1,2],inf)/16,
-    pos: Pseq([1/2,1/4,1/3], inf),
-    rate: Prand([1/2,1,2],inf)/Pseg([1,2], rrand(1,10), rrand(-10,10)),
-    amp: Pseg([0.9,0.99], rrand(1,10), rrand(-10,10), inf),
-    cutoff: Pwhite(1e3,16e3),
-    bass: Pwhite(0.0,2.0),
-    attack: 0.01,
-    sustain: Pwhite(0.001,0.1),
-    release: Pwhite(0.001,0.2),
+    dur: Pseg([0.09,0.23], rrand(1,10), rrand(-10,10), inf),
+    pos: Pseg([0.1,1.0], rrand(1,10), rrand(-10,10), inf),
+    rate: Pseg([-1.0,1.0], rrand(1,10), rrand(-10,10), inf),
+    amp: Pseg([0.4,0.5], rrand(1,10), rrand(-10,10), inf),
 )
 )
-C.repeat('æøå', 1, 20, inf)
+C.s('cccc');
+C.repeat('cccc', 1, 5, inf);
+C.record('hallop22', 'cccc', format: "yoo");
+C.record('hallop22', 'cccc', format: "flac");
+C.stopRecording;
 
-C.
+// TODO(salkin-mada)
+C.pp('cccc', \bus, 0) // bug??
 
+Ndef(\yeah, {SinOsc.ar([1002,2002])})
+Ndef(\yeah).numChannels
+C.crawl
+C.crawl("~/soundfiles_lenovo/lithops + fant eeled early mix/lithops.wav")
+C.list
+C.free
+
+C.buffers['CFiles'].size
+
+Convenience.crawl
+
+d = Dictionary.new()
+10.do{d.add("yeahs".scramble.asSymbol -> 123.rand)}; d.keysValuesDo{|k,v|"% %".format(k,v).postln};d.size;
+d.size
+d.any{ |item| item == 68}.not
+d.clear
+
+
+(
+C.p('sdf',
+    folder: C.folderNum(0).postln,
+    index: 1,
+    dur: Pseg([0.001,0.01], rrand(1,10), rrand(-10,10), inf),
+    pos: Pseg([0.0,1.0], 5000, 0, inf),
+    rate: Pseg([3.0,1/4],1,-10,inf),
+    amp: 0.4,
+    attack: 0.001,
+    sustain:0.03,
+    release:0.050
+)
+)
+
+C.rec()

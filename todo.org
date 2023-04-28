@@ -1,0 +1,19 @@
+#+TITLE:     TODO
+#+AUTHOR:    Niklas Adam
+#+DATE:      2023-02-26
+
+** TODO First [0/7]
+   [x] refactor: collaps methods into files
+   [ ] refactor: move SynthDefs into Factory style
+   [ ] warn with crawl when path is not valid
+   [ ] move single file loading into folderKey system, no CFiles
+   [ ] method for sorting CR (Convenient_Recordings) with `name`-pre-date_stamp
+   [ ] additional args *p method
+   [ ] convenient recordings convenience metode. der toggler og automatisk loader filer
+
+** TODO Second [0/1]
+   [ ] go over issues
+
+** TODO further [0/1] 
+   [ ] use straight up Pdef or use Ndef.source?
+   [ ] check fadeTime is works as expected

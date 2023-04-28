@@ -11,7 +11,7 @@ Convenience.maxChannelArraySize.do{arg channels;
         |
         bufnum, out, loop = 0, rate = 1, pan = 0, spread = 0.5, width = 2, amp = 0.5,
         attack = 0.01, sustain = 0.5, release = 1.0, pos = 0,
-        gate = 1, cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0.0
+        /*gate = 1,*/ cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0.0
         |
         var sig, key, frames, env, file;
         frames = BufFrames.kr(bufnum);
@@ -23,7 +23,7 @@ Convenience.maxChannelArraySize.do{arg channels;
             pos*frames,
             loop: loop
         );
-        env = EnvGen.ar(Env.linen(attack, sustain, release), gate);
+        env = EnvGen.ar(Env.linen(attack, sustain, release), /*gate*/);
         FreeSelf.kr(TDelay.kr(Done.kr(env),freeSelfDelay));
         sig = DFM1.ar(in: sig, freq: cutoff, res: res, inputgain: fgain, type: ftype);
         sig = sig + (LPF.ar(sig, 100, bass));
@@ -37,7 +37,7 @@ Convenience.maxChannelArraySize.do{arg channels;
         |
         bufnum, out, loop = 0, rate = 1, pan = 0, spread = 0.5, width = 2, amp = 0.5,
         attack = 0.01, sustain = 0.5, release = 1.0, pos = 0,
-        gate = 1, cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0.0
+        /*gate = 1,*/ cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0.0
         |
         var sig, key, frames, env, file;
         frames = BufFrames.kr(bufnum);
@@ -49,7 +49,7 @@ Convenience.maxChannelArraySize.do{arg channels;
             pos*frames,
             loop: loop
         );
-        env = EnvGen.ar(Env.linen(attack, sustain, release), gate);
+        env = EnvGen.ar(Env.linen(attack, sustain, release), /*gate*/);
         FreeSelf.kr(TDelay.kr(Done.kr(env),freeSelfDelay));
         sig = DFM1.ar(in: sig, freq: cutoff, res: res, inputgain: fgain, type: ftype);
         sig = sig + (LPF.ar(sig, 100, bass));
@@ -65,7 +65,7 @@ Convenience.maxChannelArraySize.do{arg channels;
         |
         bufnum, out, loop = 0, pan = 0, spread = 0.5, width = 2, amp = 0.5,
         attack = 0.01, sustain = 0.5, release = 1.0, pos = 0,
-        gate = 1, cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0.0, basefreq=440, freq
+        /*gate = 1,*/ cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0.0, basefreq=440, freq
         |
         var sig, rate, frames, env, file;
         frames = BufFrames.kr(bufnum);
@@ -78,7 +78,7 @@ Convenience.maxChannelArraySize.do{arg channels;
             pos*frames,
             loop: loop
         );
-        env = EnvGen.ar(Env.linen(attack, sustain, release), gate);
+        env = EnvGen.ar(Env.linen(attack, sustain, release), /*gate*/);
         FreeSelf.kr(TDelay.kr(Done.kr(env),freeSelfDelay));
         sig = DFM1.ar(in: sig, freq: cutoff, res: res, inputgain: fgain, type: ftype);
         sig = sig + (LPF.ar(sig, 100, bass));
@@ -92,7 +92,7 @@ Convenience.maxChannelArraySize.do{arg channels;
         |
         bufnum, out, loop = 0, pan = 0, spread = 0.5, width = 2, amp = 0.5,
         attack = 0.01, sustain = 0.5, release = 1.0, pos = 0,
-        gate = 1, cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0.0, basefreq=440, freq
+        /*gate = 1,*/ cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0.0, basefreq=440, freq
         |
         var sig, rate, frames, env, file;
         frames = BufFrames.kr(bufnum);
@@ -105,7 +105,7 @@ Convenience.maxChannelArraySize.do{arg channels;
             pos*frames,
             loop: loop
         );
-        env = EnvGen.ar(Env.linen(attack, sustain, release), gate);
+        env = EnvGen.ar(Env.linen(attack, sustain, release), /*gate*/);
         FreeSelf.kr(TDelay.kr(Done.kr(env),freeSelfDelay));
         sig = DFM1.ar(in: sig, freq: cutoff, res: res, inputgain: fgain, type: ftype);
         sig = sig + (LPF.ar(sig, 100, bass));
@@ -177,7 +177,7 @@ Convenience.maxChannelArraySize.do{arg channels;
         |
         bufnum, out, loop = 0, rate = 1, pan = 0, spread = 0.5, width = 2, amp = 0.5,
         attack = 0.01, sustain = 0.5, release = 1.0, pos = 0,
-        gate = 1, cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0.0, pr = 1.0, fr = 1.0
+        /*gate = 1,*/ cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0.0, pr = 1.0, fr = 1.0
         |
         var sig, key, frames, env, file;
         frames = BufFrames.kr(bufnum);
@@ -189,7 +189,7 @@ Convenience.maxChannelArraySize.do{arg channels;
             pos*frames,
             loop: loop
         );
-        env = EnvGen.ar(Env.linen(attack, sustain, release), gate);
+        env = EnvGen.ar(Env.linen(attack, sustain, release), /*gate*/);
         FreeSelf.kr(TDelay.kr(Done.kr(env),freeSelfDelay));
         sig = ConvenientPitchShiftPA.ar(
             sig,
@@ -209,7 +209,7 @@ Convenience.maxChannelArraySize.do{arg channels;
         |
         bufnum, out, loop = 0, rate = 1, pan = 0, spread = 0.5, width = 2, amp = 0.5,
         attack = 0.01, sustain = 0.5, release = 1.0, pos = 0,
-        gate = 1, cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0.0, pr = 1.0, fr = 1.0
+        /*gate = 1,*/ cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0.0, pr = 1.0, fr = 1.0
         |
         var sig, key, frames, env, file;
         frames = BufFrames.kr(bufnum);
@@ -221,7 +221,7 @@ Convenience.maxChannelArraySize.do{arg channels;
             pos*frames,
             loop: loop
         );
-        env = EnvGen.ar(Env.linen(attack, sustain, release), gate);
+        env = EnvGen.ar(Env.linen(attack, sustain, release), /*gate*/);
         FreeSelf.kr(TDelay.kr(Done.kr(env),freeSelfDelay));
         sig = ConvenientPitchShiftPA.ar(
             sig,
@@ -240,7 +240,7 @@ Convenience.maxChannelArraySize.do{arg channels;
         |
         bufnum, out, loop = 0, pan = 0, spread = 0.5, width = 2, amp = 0.5,
         attack = 0.01, sustain = 0.5, release = 1.0, pos = 0,
-        gate = 1, cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0.0, basefreq=440, freq,
+        /*gate = 1,*/ cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0.0, basefreq=440, freq,
         pr = 1.0, fr = 1.0
         |
         var sig, rate, frames, env, file;
@@ -254,7 +254,7 @@ Convenience.maxChannelArraySize.do{arg channels;
             pos*frames,
             loop: loop
         );
-        env = EnvGen.ar(Env.linen(attack, sustain, release), gate);
+        env = EnvGen.ar(Env.linen(attack, sustain, release), /*gate*/);
         FreeSelf.kr(TDelay.kr(Done.kr(env),freeSelfDelay));
         sig = ConvenientPitchShiftPA.ar(
             sig,
@@ -274,7 +274,7 @@ Convenience.maxChannelArraySize.do{arg channels;
         |
         bufnum, out, loop = 0, pan = 0, spread = 0.5, width = 2, amp = 0.5,
         attack = 0.01, sustain = 0.5, release = 1.0, pos = 0,
-        gate = 1, cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0.0, basefreq=440, freq,
+        /*gate = 1,*/ cutoff = 22e3, res = 0.01, fgain = 1.0, ftype = 0, bass = 0.0, basefreq=440, freq,
         pr = 1.0, fr = 1.0
         |
         var sig, rate, frames, env, file;
@@ -288,7 +288,7 @@ Convenience.maxChannelArraySize.do{arg channels;
             pos*frames,
             loop: loop
         );
-        env = EnvGen.ar(Env.linen(attack, sustain, release), gate);
+        env = EnvGen.ar(Env.linen(attack, sustain, release), /*gate*/);
         FreeSelf.kr(TDelay.kr(Done.kr(env),freeSelfDelay));
         sig = ConvenientPitchShiftPA.ar(
             sig,

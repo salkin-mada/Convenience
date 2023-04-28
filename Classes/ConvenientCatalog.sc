@@ -7,7 +7,8 @@ ConvenientCatalog {
 
 	*addSynths { | server |
 
-		classpath = Main.packages.asDict.at('Convenience');
+		// classpath = Main.packages.asDict.at('Convenience');
+        classpath = this.filenameSymbol.asString.dirname.dirname;
 		coremodules = IdentityDictionary.new;
 
 		if (addingSynths.asBoolean.not,{
@@ -52,7 +53,8 @@ ConvenientCatalog {
 	}
 
 	*addFxs { | numChannels = 2 |
-		classpath = Main.packages.asDict.at('Convenience');
+		// classpath = Main.packages.asDict.at('Convenience');
+        classpath = this.filenameSymbol.asString.dirname.dirname;
 		fxmodules = IdentityDictionary.new;
 		fxlist=IdentityDictionary.new;
 
@@ -186,9 +188,9 @@ ConvenientBufferPlayer {
 
 		^Mix(
 			on.collect({ |on, i|
-				PlayBuf.ar( numChannels, bufnum, rate.wrapAt(i), on, startPos, loop )
-				* Slew.perform( method, on, lag[0], lag[1] ).sqrt
-			})
+                PlayBuf.ar( numChannels, bufnum, rate.wrapAt(i), on, startPos, loop )
+                * ( Slew.perform( method, on, lag[0], lag[1] ) * 0.5pi ).sin
+            })
 		);
 
 	}
