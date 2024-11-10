@@ -7,7 +7,7 @@ ConvenientCatalog {
 
 	*addSynths { | server |
 
-		classpath = Main.packages.asDict.at('Convenience');
+		classpath = ConvenientCatalog.filenameSymbol.asString.dirname.dirname;
 		coremodules = IdentityDictionary.new;
 
 		if (addingSynths.asBoolean.not,{
@@ -52,7 +52,7 @@ ConvenientCatalog {
 	}
 
 	*addFxs { | numChannels = 2 |
-		classpath = Main.packages.asDict.at('Convenience');
+		classpath = ConvenientCatalog.filenameSymbol.asString.dirname.dirname;
 		fxmodules = IdentityDictionary.new;
 		fxlist=IdentityDictionary.new;
 
