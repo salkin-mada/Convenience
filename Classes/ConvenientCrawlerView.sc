@@ -6,7 +6,7 @@ ConvenientCrawlerView/* : View*/ {
 	// 	list = Dictionary.new;
 	// }
 
-	*open{ |depth, server|
+	*open{ |depth, force, server|
 		// user config
 		var recursiveGuard = true; // redundant, but protects your mem and swap from insane typ 3e4 depth crawling
 		var maxDepth = 99; // guard threshold
@@ -14,7 +14,7 @@ ConvenientCrawlerView/* : View*/ {
 		// private config
 		var initpath;
 		var cond = Condition(false);
-		var win, header, stateButton, sink, depthSetter;
+		var win, header, stateButton, sink, depthSetter, forceSetter;
 		var winW = 340, winH = 340;
 		var fontSize = 14, headerFontSize = 18;
 		var crawlerWindowStayOpen = false;
@@ -86,6 +86,13 @@ ConvenientCrawlerView/* : View*/ {
 		.stringColor_(buttonStringColor)
 		.background_(buttonBackgroundColor);
 
+		// visual indicator on force load enabled/disabled
+		forceSetter = StaticText(win, Rect(winW-buttonW/2, buttonHorizPlacement+buttonH, buttonW, 35))
+		.align_(\center)
+		.string_("force reload: "++force.asString)
+		.stringColor_(buttonStringColor)
+		;
+
 		// main focus actions
 		win.toFrontAction_({
 			win.background_(backgroundColor).alpha_(1.0);
@@ -112,6 +119,8 @@ ConvenientCrawlerView/* : View*/ {
 			depthSetter.background_(buttonBackgroundColor);
 			// depth setter above sink please
 			depthSetter.front;
+
+			forceSetter.front;
 		});
 
 		win.endFrontAction_({
@@ -245,7 +254,13 @@ ConvenientCrawlerView/* : View*/ {
 		sink.receiveDragHandler = {
 			sink.object = View.currentDrag.value;
 			initpath = sink.object.value;
-			//"initpath set from crawl gui: %".format(initpath).postln;
+
+			/* escape special characters (PathName is using glob)
+			https://github.com/supercollider/supercollider/issues/6139 */
+			if(Convenience.verbose) {"C:: removing globbin chars if any".postln};
+			initpath = initpath.escape(Convenience.globChars);
+			if(Convenience.verbose) {"C:: initpath set from crawl gui: %".format(initpath).postln};
+
 			// gui feedback for humans begin
 			sink.string = "good choice!";
 			sink.background_(Color.fromHexString("#3B0BF7"));
@@ -286,7 +301,9 @@ ConvenientCrawlerView/* : View*/ {
 				cond.wait; // wait for dialog and input
 				"\ncrawl:::going to parser".postln;
 				// go to parser
-				Convenience.prParseFolders(initpath, depth, server);
+				// Convenience.prParseFolders(initpath, depth, server);
+				initpath.postln;
+				C.prParseFolders(initpath, depth, force, nil, server);
 				"crawl:::done parsing".postln;
 			}.fork(AppClock)
 		}

@@ -428,3 +428,90 @@ Pdefn(\hej, 3)
     // Pwhite runs once:
     // the output stream consists of three values, then 'nil' ad infinitum
     Pseed(Pn(1000, 1), Pwhite(1, 10, 3)).asStream.nextN(10);
+
+s.options.inDevice_("?");
+s.options.outDevice_("?");
+s.options.numInputBusChannels_(2);
+s.options.numOutputBusChannels_(2);
+
+s.options.sampleRate_(44100)
+
+PathName("/Users/salkin/Music/Arne Nordheim - The Nordheim Tapes (2008) [FLAC]/CD 1/").isFolder;
+PathName("/Users/salkin/Music/Arne Nordheim - The Nordheim Tapes (2008) \\[FLAC\\]/CD 1/").isFolder;
+PathName("/Users/salkin/Music/Arne Nordheim - The Nordheim Tapes (2008)").isFolder;
+
+C.crawl("~/Music/Arne Nordheim - The Nordheim Tapes (2008) [FLAC]/CD 1/", 1, true)
+C.crawl("~/Music/Arne Nordheim - The Nordheim Tapes (2008) [FLAC]/CD 1/".asAbsolutePath, 1, true)
+C.crawl("~/Sounds/tofuya.wav")
+C.crawl("/Users/salkin/Sounds/pusten", force: true)
+C.size
+C.get('CFiles',0)
+C.crawl
+C.crawl(force:true)
+C.buffers
+C.files
+C.folderPaths
+C.get(1,2).play
+"/lol\\".tr(Platform.pathSeparator , $/)
+C.get(2,3).play
+C.list
+
+C.loadFn.(s)
+C.crawl("/Users/salkin/Sounds/pusten/")
+C.crawl("~/Music/Arne Nordheim - The Nordheim Tapes (2008) [FLAC]/CD 1/")
+C.files
+C.list
+C.free
+C.crawl
+p = PathName("~/Music/Arne Nordheim - The Nordheim Tapes (2008) [FLAC]/CD 1/".escape("[]"))
+p.isFolder
+p.entries
+p.deepFiles
+p.deepFilesEscapedPath
+p = PathName("~/Music/Arne Nordheim - Dodeka (2003) FLAC")
+p.isFolder
+p.deepFiles
+
+	deepFiles {
+		^this.entries.collect({ | item |
+			if(item.isFile, {
+				item
+			},{
+				item.deepFiles
+			})
+		}).flat
+	}
+
+C.escapeChars("/akjsdhasd/kj?asd/[]","[]?").postln
+f.("/akjsdhasd/kjasd/","[]?")
+
+f= {|path, chars| if(chars.size>0, {thisFunction.(path.escapeChar(chars[0]), chars[1..])}, {path})};
+"/Users/salkin/Music/Arne Nordheim - Dodeka (2003) [FLAC]/".escapeGlobChars
+String.escapeGlobChars
+f.("/Users/salkin/Music/Arne Nordheim - Dodeka (2003) [FLAC]/", "[]")
+f.("/Users/salkin/Music/Arne Nordheim - Dodeka (2003) [FLAC]/", "[] ()/")
+
+
+PathName("/Users/salkin/Music/Arne Nordheim - The Nordheim Tapes (2008) [FLAC]/CD 1/").isFolder;
+PathName("/Users/salkin/Music/Arne Nordheim - The Nordheim Tapes (2008) [FLAC]").deepFiles;
+
+PathName("/Users/salkin/Music/Arne Nordheim - The Nordheim Tapes (2008) [FLAC]/").deepFiles
+PathName("/Users/salkin/Music/Arne Nordheim - Dodeka (2003) FLAC/").isFolder
+PathName("/Users/salkin/Music/Arne Nordheim - Dodeka (2003) FLAC/").deepFiles
+
+
+PathName("/Users/salkin/Music/Arne Nordheim - The Nordheim Tapes (2008) [FLAC]/".replace("[", "\\[").replace("]", "\\]").replace("?","\\?")).isFolder;
+
+("/Users/salkin/Music/Arne Nordheim - The Nordheim Tapes (2008) [FLAC]/".replace("[", "\\[").replace("]", "\\]")).class
+PathName("/Users/salkin/Music/Arne Nordheim - The Nordheim Tapes (2008) \\[FLAC\\]/").isFolder
+
+
+"/Dodeka (203) [FLAC]/".replace("[", "\\\\[")
+
+"\\"++"\\"++"["
+"\\\\["
+
+~n = SoundFile.use("/Users/salkin/Sounds/tofuya.wav", {arg qfile; qfile.numChannels})
+~n
+
+"asd".scrable

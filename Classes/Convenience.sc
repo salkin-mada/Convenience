@@ -1,7 +1,7 @@
 Convenience {
   // user config
   classvar >loadSynths = true; // should crawler auto load synths
-  classvar >verbose = false; // debug or interest
+  classvar <>verbose = false; // debug or interest
   classvar <>numFxChannels = 2; // default number of fx channels
   classvar <>maxChannelArraySize = 8; // see Core/BufferPlayers.sc
   classvar <>pattern_history_size = 100; // for *repeat
@@ -11,9 +11,10 @@ Convenience {
   // private config
   classvar <dir, <buffers, <folderPaths, <filePaths, <patterns, <pattern_properties, <patterns_history, <inputs;
   classvar tmpName;
-  classvar loadFn;
+  classvar <loadFn;
   classvar listWindow;
   classvar recorder;
+  classvar <globChars = "[]";
   // classvar <nodegroup;
 
   classvar working = false;
@@ -30,7 +31,7 @@ Convenience {
     patterns_history = Dictionary.new;
     inputs = IdentitySet.new;
     recorder = Recorder.new(server);
-    loadFn = #{ | server | this.prPipeFoldersToLoadFunc(server: server)};
+    loadFn = #{ | server | C.prPipeFoldersToLoadFunc(server: server)};
     // loadFileFn = #{ | server | this.prFileToLoadFunc(server: server)};
     this.prAddEventType;
     "\n*** Convenience enabled ***".postln;
@@ -258,11 +259,11 @@ Convenience {
       if(Convenience.folders.asArray[0].isNil.not, {
         folder = Convenience.folders.asArray[0];
       }, {
-        Error("Conveience::*get:: folder is unspecified, which is okay but *get cant find a folder to use").throw;
+        Error("Conveience::*get:: folder is unspecified -> using default").throw;
         ^nil
       })
     }
-    {"C:: folder can not be specified in that type..".warn};
+    {"C:: folder can not be specified in that type.. supported types are: symbol, integer, float".warn};
 
     bufferGroup = buffers[folder.asSymbol];
 

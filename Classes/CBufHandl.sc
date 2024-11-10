@@ -1,5 +1,4 @@
 + C {
-
     *load { | path, type, server |
         var folder, files, loadedBuffers = [], folderKey;
         var file; // single file loading
@@ -244,7 +243,7 @@
                             case
                             {numChannels == 1}
                             {
-                                if(verbose.asBoolean,{"convenience:: loading 1 channels".postln});
+                                if(verbose.asBoolean,{"convenience:: loading 1 channel".postln});
                                 Buffer.readChannel(server, file.fullPath, 
                                     channels: [0],
                                     // action: {condition.unhang}
@@ -261,7 +260,7 @@
                             }
                             {numChannels > 2}
                             {
-                                if(verbose.asBoolean,{"convenience:: loading 1 channels".postln});
+                                if(verbose.asBoolean,{"convenience:: numChannels is larger than 2 -> loading 1 channel".postln});
                                 Buffer.readChannel(server, file.fullPath;,
                                     channels: [0],
                                     // action: {condition.unhang}
@@ -435,7 +434,7 @@
                 this.prFreeBuffers;
                 this.prClearFolderPaths; // also reset parser -> empty dictionary of folder paths
                 server = server ? Server.default;
-                ServerBoot.remove(loadFn, server);
+                ServerBoot.remove(Convenience.loadFn, server);
                 "all buffers freed".postln;
                 // update the list view
                 ConvenientListView.update
@@ -476,18 +475,28 @@
         });
     }
 
-    *crawl { | initpath, depth = 0, force = false, server |
+    *crawl { | initpath, depth = 0, force = false, disableRegex = true, server |
         // if server is nil set to default
         server = server ? Server.default;
 
         // if no path is specified open crawl drag'n drop window
         if (initpath.isNil, {
-            ConvenientCrawlerView.open(depth, server);
+            ConvenientCrawlerView.open(depth, force, server);
         }, {
             // NO WINDOW USAGE
             // initpath was set when crawl method was called
             // going directly to parsing!
+			if(verbose) {
+				initpath.postln;
+			};
             //
+			/* escape special characters (PathName is using glob)
+			https://github.com/supercollider/supercollider/issues/6139 */
+			if(disableRegex.asBoolean) {
+				if(verbose) {"C:: removing globbin chars if any".postln};
+				// initpath = initpath.replace("[", "\\[").replace("]", "\\]").replace("?","\\?")
+				initpath = initpath.escape(Convenience.globChars);
+			};
             if(PathName(initpath).isFolder, {
                 if(verbose){"crawl:: this is a folder".postln};
                 this.prParseFolders(initpath, depth, force, server);
@@ -507,18 +516,21 @@
     }
 
     *prParseFolders{ | initpath, depth = 0, force = false, server |
-        //var initPathDepthCount = PathName(initpath).fullPath.withTrailingSlash.split(thisProcess.platform.pathSeparator).size;
         var initPathDepth, anythingFound;
+        //var initPathDepthCount = PathName(initpath).fullPath.withTrailingSlash.split(thisProcess.platform.pathSeparator).size;
 
         /*protection against setting an initpath ending with / or // etc,
         which will break the depth control*/
         while({initpath.endsWith("/")}, {
-            if(verbose.asBoolean, {"removed /".postln; });
+            if(verbose.asBoolean, {"C:: removed /".postln; });
             initpath = initpath[..initpath.size-2]
         });
 
-        // clean out windows seperator
+        // clean out platform (OS) separator if it differs from /
+		// Windows I am looking at you
         initpath = initpath.tr(Platform.pathSeparator , $/);
+
+		if(verbose) {"C:: initpath post all"+"clean outs".quote+": %".format(initpath).postln};
 
         initPathDepth = PathName(initpath).fullPath.split($/).size;
 
@@ -531,8 +543,7 @@
             "\n\tinitpath: %".format(initpath).post;
             "\n\tdepth: %\n".format(depth).postln;
         });
-
-        PathName(initpath).deepFiles.do{ | item |
+        PathName(initpath).deepFilesEscapedPath.do{ | item |
             var loadFolderFlag;
 
             if (verbose, {
@@ -551,6 +562,7 @@
             }, {
                 loadFolderFlag = false;
             });
+			if(verbose, {"C:: due to path depth of item -> should load item: %".format(loadFolderFlag).postln});
 
             if (loadFolderFlag == true, {
                 var folderKey;
@@ -577,7 +589,7 @@
             }.fork(AppClock)
         } {
             // stage work for boot up
-            ServerBoot.add(loadFn, server);
+            ServerBoot.add(Convenience.loadFn, server);
         };
     }
 
@@ -593,8 +605,7 @@
             "\n\n\t***prPipeFoldersToLoadFunc**\nfolderPath: %\n".format(item).postln
         };*/
 
-        if (folderPaths.isEmpty.not,{
-
+        if (folderPaths.isEmpty.not, {
             if (news,{
                 folderPaths.keysValuesDo{ | key, path |
                     if (buffers.includesKey(key).not,{
@@ -680,4 +691,21 @@
         };
     }
 
+}
+
++ String {
+	escape {|chars| ^chars.inject(this, _.escapeChar(_))}
+}
+
++ PathName {
+	deepFilesEscapedPath {|chars|
+		^this.entries.collect({ | item |
+			item = PathName(item.fullPath.escape(Convenience.globChars));
+			if(item.isFile, {
+				item
+			},{
+				item.deepFilesEscapedPath
+			})
+		}).flat
+	}
 }
